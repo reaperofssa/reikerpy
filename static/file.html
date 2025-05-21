@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ReikerNx File Manager</title>
+    <title>ReikerNX File Manager</title>
     <style>
         :root {
             --primary-color: #00ff00;
@@ -39,13 +39,30 @@
         .header {
             background-color: #000;
             color: var(--primary-color);
-            padding: 12px 20px;
+            padding: 15px 20px;
             text-align: center;
-            box-shadow: 0 1px 3px var(--shadow-color);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5), 0 0 5px var(--shadow-color);
             position: sticky;
             top: 0;
             z-index: 100;
             border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(to right, #000000, #0a0a0a, #000000);
+        }
+        
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .logo {
+            font-size: 28px;
+            margin-right: 10px;
+            color: var(--primary-color);
+            text-shadow: 0 0 10px var(--primary-color);
         }
         
         .header h1 {
@@ -53,8 +70,12 @@
             font-size: 24px;
             letter-spacing: 2px;
             text-transform: uppercase;
-            text-shadow: 0 0 5px rgba(0, 255, 0, 0.3);
-            font-weight: 400;
+            font-weight: 600;
+            background: linear-gradient(to right, var(--primary-color), #ffffff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 2px rgba(0, 255, 0, 0.2);
         }
         
         .container {
@@ -84,6 +105,18 @@
             border: 1px solid var(--border-color);
             border-radius: 4px;
             overflow: hidden;
+        }
+        
+        .file-list-header {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: var(--background-lighter);
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .file-list-header .checkbox-container {
+            margin-right: 10px;
         }
         
         .file-list li {
@@ -133,6 +166,42 @@
         
         .file-list li:hover {
             background: var(--background-lighter);
+        }
+        
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            margin-right: 8px;
+        }
+        
+        .custom-checkbox {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--background-dark);
+            border: 1px solid var(--border-color);
+            border-radius: 3px;
+            cursor: pointer;
+            position: relative;
+            transition: all var(--transition-speed);
+        }
+        
+        .custom-checkbox:checked {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .custom-checkbox:checked::after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 2px;
+            width: 4px;
+            height: 8px;
+            border: solid black;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
         }
         
         .action-panels {
@@ -357,6 +426,20 @@
             margin-bottom: 20px;
             color: var(--primary-color);
             font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .modal-logo-icon {
+            font-size: 32px;
+            text-shadow: 0 0 10px var(--primary-color);
+        }
+        
+        .modal-logo-text {
+            font-weight: 600;
+            letter-spacing: 1px;
         }
         
         .editor-actions {
@@ -379,6 +462,46 @@
         
         .path-indicator span {
             color: var(--primary-color);
+        }
+        
+        .bulk-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: var(--background-lighter);
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            align-items: center;
+        }
+        
+        .bulk-actions-title {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-right: 10px;
+        }
+        
+        .move-to-container {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-left: auto;
+        }
+        
+        .move-to-input {
+            padding: 4px 8px;
+            background: var(--background-dark);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 4px;
+            font-size: 13px;
+            width: 150px;
+        }
+        
+        .move-to-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
         }
         
         /* Mobile responsiveness */
@@ -414,6 +537,21 @@
                 width: 95%;
                 padding: 20px;
             }
+            
+            .bulk-actions {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .move-to-container {
+                margin-left: 0;
+                margin-top: 10px;
+                width: 100%;
+            }
+            
+            .move-to-input {
+                flex: 1;
+            }
         }
     </style>
 </head>
@@ -422,7 +560,8 @@
     <div class="modal" id="password-modal">
         <div class="modal-content">
             <div class="modal-logo">
-                <span>⚡</span> ReikerNx
+                <span class="modal-logo-icon">⚡</span>
+                <span class="modal-logo-text">ReikerNX</span>
             </div>
             <h3>Security Authentication</h3>
             <div class="form-group">
@@ -437,7 +576,10 @@
 
     <!-- Header -->
     <div class="header">
-        <h1>ReikerNx File Manager</h1>
+        <div class="header-content">
+            <div class="logo">⚡</div>
+            <h1>ReikerNX</h1>
+        </div>
     </div>
 
     <div class="container" id="file-explorer">
@@ -469,6 +611,22 @@
             </div>
         </div>
         
+        <div class="bulk-actions" id="bulk-actions" style="display: none;">
+            <div class="bulk-actions-title">Selected: <span id="selected-count">0</span> items</div>
+            <button onclick="selectAllFiles(false)">Deselect All</button>
+            <div class="move-to-container">
+                <input type="text" class="move-to-input" id="move-to-path" placeholder="../path/to/move">
+                <button onclick="moveSelectedFiles()">Move Selected</button>
+            </div>
+        </div>
+        
+        <div class="file-list-header">
+            <div class="checkbox-container">
+                <input type="checkbox" class="custom-checkbox" id="select-all" onclick="selectAllFiles(this.checked)">
+            </div>
+            <span>Name</span>
+        </div>
+        
         <ul class="file-list" id="file-list"></ul>
     </div>
 
@@ -487,17 +645,46 @@
         let maxLoginAttempts = 5;
         let loginAttempts = 0;
         let lockoutEndTime = 0;
+        let authToken = null;
+        let selectedFiles = new Set();
+        
+        // Generate a secure token
+        function generateToken() {
+            const array = new Uint8Array(16);
+            window.crypto.getRandomValues(array);
+            return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+        }
         
         // Check if user is authenticated
         function checkAuthentication() {
-            const isAuthenticated = localStorage.getItem('authToken');
-            if (!isAuthenticated) {
+            // Get the token from localStorage
+            const storedToken = localStorage.getItem('authToken');
+            const tokenTimestamp = localStorage.getItem('authTokenTimestamp');
+            
+            // Check if token exists and is not expired (24 hours)
+            const now = Date.now();
+            const isValid = storedToken && tokenTimestamp && 
+                           (now - parseInt(tokenTimestamp) < 24 * 60 * 60 * 1000);
+            
+            if (!isValid) {
+                // Clear any existing tokens
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('authTokenTimestamp');
+                authToken = null;
+                
+                // Show login modal
                 showPasswordModal();
-                // Hide the main content until authenticated
+                
+                // Hide the main content
                 document.getElementById('file-explorer').style.display = 'none';
                 document.getElementById('file-editor').style.display = 'none';
             } else {
+                // Token is valid
+                authToken = storedToken;
                 document.getElementById('file-explorer').style.display = 'block';
+                
+                // Load files automatically
+                loadFiles();
             }
         }
         
@@ -566,14 +753,18 @@
                 const isValid = await validatePassword(password);
                 
                 if (isValid) {
-                    // Store authentication token
-                    localStorage.setItem('authToken', 'authenticated');
+                    // Generate and store a secure token with timestamp
+                    authToken = generateToken();
+                    localStorage.setItem('authToken', authToken);
+                    localStorage.setItem('authTokenTimestamp', Date.now().toString());
+                    
+                    // Hide modal and reset form
                     document.getElementById('password-modal').style.display = 'none';
                     document.getElementById('error-message').textContent = '';
                     passwordInput.value = '';
                     loginAttempts = 0;
                     
-                    // Show the main content
+                    // Show the main content and load files
                     document.getElementById('file-explorer').style.display = 'block';
                     loadFiles();
                 } else {
@@ -627,10 +818,23 @@
                 return false;
             }
         }
+        
+        // Check if authenticated before making API calls
+        function isAuthenticated() {
+            if (!authToken) {
+                checkAuthentication();
+                return false;
+            }
+            return true;
+        }
 
         function loadFiles(path = "") {
+            if (!isAuthenticated()) return;
+            
             currentPath = path;
             updatePathIndicator();
+            selectedFiles.clear();
+            updateBulkActionsVisibility();
 
             const apiUrl = path ? `${serverUrl}/dir/${encodeURIComponent(path)}` : `${serverUrl}/files`;
 
@@ -647,13 +851,37 @@
 
                     if (path) {
                         const backBtn = document.createElement("li");
-                        backBtn.innerHTML = '<span class="name folder">⬅️ Go Back</span>';
-                        backBtn.onclick = () => navigateBack();
+                        const checkboxContainer = document.createElement("div");
+                        checkboxContainer.className = "checkbox-container";
+                        
+                        const nameSpan = document.createElement("span");
+                        nameSpan.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg> Go Back`;
+                        nameSpan.className = "folder name";
+                        nameSpan.onclick = () => navigateBack();
+                        
+                        backBtn.appendChild(checkboxContainer);
+                        backBtn.appendChild(nameSpan);
                         fileList.appendChild(backBtn);
                     }
 
                     data.forEach(item => {
                         const li = document.createElement("li");
+                        
+                        // Add checkbox for selection
+                        const checkboxContainer = document.createElement("div");
+                        checkboxContainer.className = "checkbox-container";
+                        
+                        const checkbox = document.createElement("input");
+                        checkbox.type = "checkbox";
+                        checkbox.className = "custom-checkbox";
+                        checkbox.dataset.name = item.name;
+                        checkbox.onclick = (e) => {
+                            e.stopPropagation();
+                            toggleFileSelection(item.name);
+                        };
+                        
+                        checkboxContainer.appendChild(checkbox);
+                        li.appendChild(checkboxContainer);
 
                         const nameSpan = document.createElement("span");
                         nameSpan.innerHTML = item.is_directory ? 
@@ -688,8 +916,88 @@
                         li.appendChild(actionsDiv);
                         fileList.appendChild(li);
                     });
+                    
+                    // Reset select all checkbox
+                    document.getElementById('select-all').checked = false;
                 })
                 .catch(err => alert("Error loading files: " + err));
+        }
+        
+        function toggleFileSelection(filename) {
+            if (selectedFiles.has(filename)) {
+                selectedFiles.delete(filename);
+            } else {
+                selectedFiles.add(filename);
+            }
+            
+            updateBulkActionsVisibility();
+        }
+        
+        function selectAllFiles(checked) {
+            const checkboxes = document.querySelectorAll('.file-list .custom-checkbox');
+            selectedFiles.clear();
+            
+            checkboxes.forEach(checkbox => {
+                if (checkbox.dataset.name) {
+                    checkbox.checked = checked;
+                    if (checked) {
+                        selectedFiles.add(checkbox.dataset.name);
+                    }
+                }
+            });
+            
+            updateBulkActionsVisibility();
+        }
+        
+        function updateBulkActionsVisibility() {
+            const bulkActions = document.getElementById('bulk-actions');
+            const selectedCount = document.getElementById('selected-count');
+            
+            if (selectedFiles.size > 0) {
+                bulkActions.style.display = 'flex';
+                selectedCount.textContent = selectedFiles.size;
+            } else {
+                bulkActions.style.display = 'none';
+            }
+        }
+        
+        function moveSelectedFiles() {
+            if (!isAuthenticated()) return;
+            if (selectedFiles.size === 0) {
+                alert("No files selected");
+                return;
+            }
+            
+            const targetPath = document.getElementById('move-to-path').value.trim();
+            if (!targetPath) {
+                alert("Please enter a destination path");
+                return;
+            }
+            
+            // Process files one by one
+            const promises = Array.from(selectedFiles).map(filename => {
+                const oldPath = currentPath ? `${currentPath}/${filename}` : filename;
+                const newPath = `${targetPath}/${filename}`;
+                
+                return fetch(`${serverUrl}/rename`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ old_name: oldPath, new_name: newPath })
+                })
+                .then(res => res.json());
+            });
+            
+            Promise.all(promises)
+                .then(results => {
+                    const successCount = results.filter(r => !r.error).length;
+                    alert(`Moved ${successCount} of ${selectedFiles.size} files to ${targetPath}`);
+                    selectedFiles.clear();
+                    updateBulkActionsVisibility();
+                    loadFiles(currentPath);
+                })
+                .catch(err => {
+                    alert("Error moving files: " + err);
+                });
         }
         
         function updatePathIndicator() {
@@ -698,17 +1006,20 @@
         }
 
         function openFolder(folderName) {
+            if (!isAuthenticated()) return;
             const newPath = currentPath ? `${currentPath}/${folderName}` : folderName;
             loadFiles(newPath);
         }
 
         function navigateBack() {
+            if (!isAuthenticated()) return;
             if (!currentPath) return;
             const parentPath = currentPath.split("/").slice(0, -1).join("/");
             loadFiles(parentPath);
         }
 
         function openFile(filename) {
+            if (!isAuthenticated()) return;
             const filePath = currentPath ? `${currentPath}/${filename}` : filename;
 
             if (filename.toLowerCase().endsWith(".zip")) {
@@ -748,6 +1059,7 @@
         }
 
         function saveFile() {
+            if (!isAuthenticated()) return;
             const filePath = document.getElementById("editor-title").textContent.replace("Editing: ", "");
             const content = document.getElementById("file-content").value;
 
@@ -771,6 +1083,7 @@
         }
 
         function createNewFile() {
+            if (!isAuthenticated()) return;
             const filename = prompt("Enter new file name:");
             if (!filename) return;
             
@@ -790,6 +1103,7 @@
         }
 
         function createNewFolder() {
+            if (!isAuthenticated()) return;
             const dirname = prompt("Enter new folder name:");
             if (!dirname) return;
 
@@ -809,6 +1123,7 @@
         }
 
         function renameFile(oldName) {
+            if (!isAuthenticated()) return;
             const newName = prompt("Rename file to:", oldName);
             if (!newName || newName === oldName) return;
 
@@ -829,6 +1144,7 @@
         }
 
         function uploadFile() {
+            if (!isAuthenticated()) return;
             const fileInput = document.getElementById("fileInput");
             if (!fileInput.files.length) {
                 alert("Please select a file to upload.");
@@ -855,6 +1171,7 @@
         }
 
         function deleteFile(filename) {
+            if (!isAuthenticated()) return;
             if (!confirm(`Are you sure you want to delete "${filename}"?`)) return;
 
             const filePath = currentPath ? `${currentPath}/${filename}` : filename;
@@ -884,36 +1201,18 @@
             const fileName = event.target.files[0]?.name || "Choose a file or drag here";
             document.getElementById('file-label').textContent = fileName;
         });
+        
+        // Handle Enter key in move-to field
+        document.getElementById('move-to-path').addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                moveSelectedFiles();
+            }
+        });
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
             checkAuthentication();
         });
-        
-        // Check for authentication on page load
-        window.addEventListener('load', function() {
-            checkAuthentication();
-        });
-        
-        // Prevent access to the application if not authenticated
-        function checkAccess() {
-            const isAuthenticated = localStorage.getItem('authToken');
-            if (!isAuthenticated) {
-                showPasswordModal();
-                document.getElementById('file-explorer').style.display = 'none';
-                document.getElementById('file-editor').style.display = 'none';
-                return false;
-            }
-            return true;
-        }
-        
-        // Override all API functions to check authentication first
-        const originalLoadFiles = loadFiles;
-        loadFiles = function(path) {
-            if (checkAccess()) {
-                originalLoadFiles(path);
-            }
-        };
     </script>
 </body>
 </html>
