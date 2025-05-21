@@ -10,11 +10,15 @@ import time
 import signal
 import zipfile
 import shutil
+from dotenv import load_dotenv
+import os
 
 # Flask app initialization
 app = Flask(__name__, static_folder="static", static_url_path="/")
 CORS(app)  # Allow cross-origin requests
 START_TIME = time.time()
+
+load_dotenv()
 
 # Set working directory to /home
 HOME_DIR = os.path.join(os.getcwd(), 'home')
@@ -282,6 +286,22 @@ def edit_file():
         f.write(content)
 
     return jsonify({"message": f"{filename} saved successfully"}), 200
+
+@app.route('/check-password', methods=['POST'])
+def check_password():
+    data = request.get_json()
+    client_password = data.get('password') if data else None
+
+    if not client_password:
+        return jsonify(success=False, message='No password provided'), 400
+
+    is_valid = client_password == os.getenv('PASSWORD')
+
+    if is_valid:
+        return jsonify(success=True, message='Password is correct')
+    else:
+        return jsonify(success=False, message='Incorrect password'), 401
+
 
 @app.route('/delete', methods=['POST'])
 def delete_file_or_dir():
