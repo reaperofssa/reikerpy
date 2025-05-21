@@ -31,7 +31,7 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 # Hardcoded server stats (Modify based on actual system stats)
 
 # Define allowed commands for security
-ALLOWED_COMMANDS = {"ls", "cat", "echo", "python", "pip", "python3", "node", "npm", "yarn", "gitclone", "pwd", "zip", "unzip", "ping"}  # Add only safe commands
+ALLOWED_COMMANDS = {"ls", "cat", "echo", "python", "pip", "python3", "node", "npm", "git", "pyarmor" "python3" "pm2" "yarn", "gitclone", "pwd", "zip", "unzip", "ping"}  # Add only safe commands
 
 @app.route('/')
 def serve_index():
