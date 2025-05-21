@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ReikerNX File Manager</title>
+    <title>ReikerNx File Manager</title>
     <style>
         :root {
             --primary-color: #00ff00;
@@ -34,6 +34,7 @@
             padding: 0;
             min-height: 100vh;
             line-height: 1.6;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%230a0a0a"/><path d="M0 10 L100 10" stroke="%23003300" stroke-width="0.5"/><path d="M0 30 L100 30" stroke="%23003300" stroke-width="0.5"/><path d="M0 50 L100 50" stroke="%23003300" stroke-width="0.5"/><path d="M0 70 L100 70" stroke="%23003300" stroke-width="0.5"/><path d="M0 90 L100 90" stroke="%23003300" stroke-width="0.5"/><path d="M10 0 L10 100" stroke="%23003300" stroke-width="0.5"/><path d="M30 0 L30 100" stroke="%23003300" stroke-width="0.5"/><path d="M50 0 L50 100" stroke="%23003300" stroke-width="0.5"/><path d="M70 0 L70 100" stroke="%23003300" stroke-width="0.5"/><path d="M90 0 L90 100" stroke="%23003300" stroke-width="0.5"/></svg>');
         }
         
         .header {
@@ -50,12 +51,33 @@
             justify-content: center;
             align-items: center;
             background: linear-gradient(to right, #000000, #0a0a0a, #000000);
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, transparent 20%, #000 70%);
+            opacity: 0.1;
+            animation: pulse 15s infinite linear;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.1; }
+            50% { transform: scale(1.1); opacity: 0.15; }
+            100% { transform: scale(1); opacity: 0.1; }
         }
         
         .header-content {
             display: flex;
             align-items: center;
             justify-content: center;
+            position: relative;
+            z-index: 1;
         }
         
         .logo {
@@ -63,6 +85,12 @@
             margin-right: 10px;
             color: var(--primary-color);
             text-shadow: 0 0 10px var(--primary-color);
+            animation: glow 2s infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { text-shadow: 0 0 5px var(--primary-color); }
+            to { text-shadow: 0 0 15px var(--primary-color), 0 0 20px var(--primary-color); }
         }
         
         .header h1 {
@@ -76,6 +104,17 @@
             background-clip: text;
             -webkit-text-fill-color: transparent;
             text-shadow: 0 0 2px rgba(0, 255, 0, 0.2);
+            position: relative;
+        }
+        
+        .header h1::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--primary-color), transparent);
         }
         
         .container {
@@ -86,6 +125,25 @@
             border-radius: 6px;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 0 1px var(--shadow-color);
             border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(0, 255, 0, 0.05) 0%, transparent 100%);
+            pointer-events: none;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         h2 {
@@ -96,6 +154,19 @@
             padding-bottom: 10px;
             font-weight: 400;
             font-size: 20px;
+            position: relative;
+        }
+        
+        h2::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 2px;
+            background: var(--primary-color);
+            box-shadow: 0 0 5px var(--primary-color);
         }
         
         .file-list {
@@ -125,7 +196,24 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: background var(--transition-speed);
+            transition: all var(--transition-speed);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .file-list li::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 0, 0.05), transparent);
+            transition: all 0.5s;
+        }
+        
+        .file-list li:hover::before {
+            left: 100%;
         }
         
         .file-list li:last-child {
@@ -190,6 +278,13 @@
         .custom-checkbox:checked {
             background: var(--primary-color);
             border-color: var(--primary-color);
+            animation: checkmark 0.2s ease-in-out;
+        }
+        
+        @keyframes checkmark {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
         }
         
         .custom-checkbox:checked::after {
@@ -216,6 +311,29 @@
             border: 1px solid var(--border-color);
             border-radius: 4px;
             padding: 15px;
+            transition: all var(--transition-speed);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .panel:hover {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 5px var(--shadow-color);
+        }
+        
+        .panel::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 5px;
+            height: 0;
+            background: var(--primary-color);
+            transition: height 0.3s ease;
+        }
+        
+        .panel:hover::after {
+            height: 100%;
         }
         
         .panel-title {
@@ -244,11 +362,33 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 255, 0, 0.1), transparent);
+            transition: all 0.5s;
+        }
+        
+        button:hover::before {
+            left: 100%;
         }
         
         button:hover {
             background: var(--primary-light);
             box-shadow: 0 0 4px var(--shadow-color);
+            transform: translateY(-1px);
+        }
+        
+        button:active {
+            transform: translateY(1px);
         }
         
         button.primary {
@@ -258,6 +398,16 @@
         
         button.primary:hover {
             background: var(--primary-dark);
+        }
+        
+        button.danger {
+            background: transparent;
+            color: var(--danger-color);
+            border-color: var(--danger-color);
+        }
+        
+        button.danger:hover {
+            background: rgba(255, 0, 0, 0.1);
         }
         
         .action-btn {
@@ -276,15 +426,37 @@
             color: var(--primary-color);
         }
         
+        .editor-container {
+            position: relative;
+            margin-bottom: 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+            display: flex;
+        }
+        
+        .line-numbers {
+            width: 40px;
+            background: var(--background-darker);
+            color: var(--text-muted);
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            padding: 10px 5px;
+            text-align: right;
+            border-right: 1px solid var(--border-color);
+            user-select: none;
+            overflow: hidden;
+        }
+        
         textarea {
             width: 100%;
             height: 300px;
             background: var(--background-dark);
             color: var(--text-color);
-            border: 1px solid var(--border-color);
+            border: none;
             padding: 10px;
             font-family: 'Consolas', 'Monaco', monospace;
-            border-radius: 4px;
             resize: vertical;
             font-size: 14px;
             line-height: 1.5;
@@ -293,7 +465,6 @@
         
         textarea:focus {
             outline: none;
-            border-color: var(--primary-color);
         }
         
         .upload-section {
@@ -372,6 +543,18 @@
             border: 1px solid var(--border-color);
             text-align: center;
             animation: slideIn 0.3s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .modal-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(to right, var(--primary-dark), var(--primary-color));
         }
         
         .modal h3 {
@@ -407,6 +590,7 @@
         .form-group input:focus {
             outline: none;
             border-color: var(--primary-color);
+            box-shadow: 0 0 5px rgba(0, 255, 0, 0.2);
         }
         
         .error-message {
@@ -435,6 +619,7 @@
         .modal-logo-icon {
             font-size: 32px;
             text-shadow: 0 0 10px var(--primary-color);
+            animation: glow 2s infinite alternate;
         }
         
         .modal-logo-text {
@@ -458,10 +643,22 @@
             border: 1px solid var(--border-color);
             overflow: auto;
             white-space: nowrap;
+            position: relative;
+        }
+        
+        .path-indicator::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            background: var(--primary-color);
         }
         
         .path-indicator span {
             color: var(--primary-color);
+            font-weight: 500;
         }
         
         .bulk-actions {
@@ -474,6 +671,7 @@
             border-radius: 4px;
             border: 1px solid var(--border-color);
             align-items: center;
+            animation: fadeIn 0.3s ease-out;
         }
         
         .bulk-actions-title {
@@ -497,11 +695,14 @@
             border-radius: 4px;
             font-size: 13px;
             width: 150px;
+            transition: all var(--transition-speed);
         }
         
         .move-to-input:focus {
             outline: none;
             border-color: var(--primary-color);
+            box-shadow: 0 0 5px rgba(0, 255, 0, 0.2);
+            width: 180px;
         }
         
         /* Mobile responsiveness */
@@ -582,7 +783,7 @@
         </div>
     </div>
 
-    <div class="container" id="file-explorer">
+    <div class="container" id="file-explorer" style="display: none;">
         <h2>File Explorer</h2>
         
         <div class="path-indicator" id="path-indicator">
@@ -593,9 +794,18 @@
             <div class="panel">
                 <div class="panel-title">File Operations</div>
                 <div class="buttons">
-                    <button onclick="createNewFile()">New File</button>
-                    <button onclick="createNewFolder()">New Folder</button>
-                    <button onclick="goToConsole()">Console</button>
+                    <button onclick="createNewFile()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+                        New File
+                    </button>
+                    <button onclick="createNewFolder()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
+                        New Folder
+                    </button>
+                    <button onclick="goToConsole()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+                        Console
+                    </button>
                 </div>
             </div>
             
@@ -603,7 +813,10 @@
                 <div class="panel-title">Upload Files</div>
                 <div class="upload-section">
                     <div class="file-input-wrapper">
-                        <div class="file-input-label" id="file-label">Choose a file or drag here</div>
+                        <div class="file-input-label" id="file-label">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px; display: inline-block; vertical-align: middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                            Choose a file or drag here
+                        </div>
                         <input type="file" id="fileInput">
                     </div>
                     <button onclick="uploadFile()">Upload</button>
@@ -614,6 +827,10 @@
         <div class="bulk-actions" id="bulk-actions" style="display: none;">
             <div class="bulk-actions-title">Selected: <span id="selected-count">0</span> items</div>
             <button onclick="selectAllFiles(false)">Deselect All</button>
+            <button class="danger" onclick="deleteSelectedFiles()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                Delete Selected
+            </button>
             <div class="move-to-container">
                 <input type="text" class="move-to-input" id="move-to-path" placeholder="../path/to/move">
                 <button onclick="moveSelectedFiles()">Move Selected</button>
@@ -632,10 +849,21 @@
 
     <div class="container" id="file-editor" style="display: none;">
         <h2 id="editor-title">Editing: </h2>
-        <textarea id="file-content"></textarea>
+        
+        <div class="editor-container">
+            <div class="line-numbers" id="line-numbers"></div>
+            <textarea id="file-content" onscroll="syncScroll()" onkeyup="updateLineNumbers()"></textarea>
+        </div>
+        
         <div class="editor-actions">
-            <button onclick="backToExplorer()">Back</button>
-            <button class="primary" onclick="saveFile()">Save Changes</button>
+            <button onclick="backToExplorer()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                Back
+            </button>
+            <button class="primary" onclick="saveFile()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                Save Changes
+            </button>
         </div>
     </div>
 
@@ -678,6 +906,7 @@
                 // Hide the main content
                 document.getElementById('file-explorer').style.display = 'none';
                 document.getElementById('file-editor').style.display = 'none';
+                return false;
             } else {
                 // Token is valid
                 authToken = storedToken;
@@ -685,6 +914,7 @@
                 
                 // Load files automatically
                 loadFiles();
+                return true;
             }
         }
         
@@ -920,7 +1150,11 @@
                     // Reset select all checkbox
                     document.getElementById('select-all').checked = false;
                 })
-                .catch(err => alert("Error loading files: " + err));
+                .catch(err => {
+                    // If there's an error, check if it's an authentication issue
+                    console.error("Error loading files:", err);
+                    checkAuthentication();
+                });
         }
         
         function toggleFileSelection(filename) {
@@ -977,14 +1211,19 @@
             // Process files one by one
             const promises = Array.from(selectedFiles).map(filename => {
                 const oldPath = currentPath ? `${currentPath}/${filename}` : filename;
-                const newPath = `${targetPath}/${filename}`;
+                // Use the target path directly with the filename, not as a directory
+                const newPath = targetPath + filename;
                 
                 return fetch(`${serverUrl}/rename`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ old_name: oldPath, new_name: newPath })
                 })
-                .then(res => res.json());
+                .then(res => res.json())
+                .catch(err => {
+                    console.error("Error moving file:", err);
+                    return { error: err.message };
+                });
             });
             
             Promise.all(promises)
@@ -997,6 +1236,48 @@
                 })
                 .catch(err => {
                     alert("Error moving files: " + err);
+                    checkAuthentication();
+                });
+        }
+        
+        function deleteSelectedFiles() {
+            if (!isAuthenticated()) return;
+            if (selectedFiles.size === 0) {
+                alert("No files selected");
+                return;
+            }
+            
+            if (!confirm(`Are you sure you want to delete ${selectedFiles.size} selected files?`)) {
+                return;
+            }
+            
+            // Process files one by one
+            const promises = Array.from(selectedFiles).map(filename => {
+                const filePath = currentPath ? `${currentPath}/${filename}` : filename;
+                
+                return fetch(`${serverUrl}/delete`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ filename: filePath })
+                })
+                .then(res => res.json())
+                .catch(err => {
+                    console.error("Error deleting file:", err);
+                    return { error: err.message };
+                });
+            });
+            
+            Promise.all(promises)
+                .then(results => {
+                    const successCount = results.filter(r => !r.error).length;
+                    alert(`Deleted ${successCount} of ${selectedFiles.size} files`);
+                    selectedFiles.clear();
+                    updateBulkActionsVisibility();
+                    loadFiles(currentPath);
+                })
+                .catch(err => {
+                    alert("Error deleting files: " + err);
+                    checkAuthentication();
                 });
         }
         
@@ -1038,13 +1319,21 @@
                             loadFiles(currentPath);
                         }
                     })
-                    .catch(err => alert("Error extracting ZIP file: " + err));
+                    .catch(err => {
+                        alert("Error extracting ZIP file: " + err);
+                        checkAuthentication();
+                    });
                 }
                 return;
             }
 
             fetch(`${serverUrl}/files/${encodeURIComponent(filePath)}`)
-                .then(res => res.json())
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error(`HTTP error! status: ${res.status}`);
+                    }
+                    return res.json();
+                })
                 .then(data => {
                     if (data.error) {
                         alert("Error: " + data.error);
@@ -1054,8 +1343,40 @@
                     document.getElementById("file-content").value = data.content;
                     document.getElementById("file-editor").style.display = "block";
                     document.getElementById("file-explorer").style.display = "none";
+                    
+                    // Update line numbers
+                    updateLineNumbers();
                 })
-                .catch(err => alert("Error opening file: " + err));
+                .catch(err => {
+                    alert("Error opening file: " + err);
+                    checkAuthentication();
+                });
+        }
+        
+        // Update line numbers in the editor
+        function updateLineNumbers() {
+            const textarea = document.getElementById("file-content");
+            const lineNumbers = document.getElementById("line-numbers");
+            const content = textarea.value;
+            const lines = content.split('\n');
+            const lineCount = lines.length;
+            
+            let lineNumbersHTML = '';
+            for (let i = 1; i <= lineCount; i++) {
+                lineNumbersHTML += i + '<br>';
+            }
+            
+            lineNumbers.innerHTML = lineNumbersHTML;
+            
+            // Sync scroll position
+            syncScroll();
+        }
+        
+        // Synchronize scrolling between textarea and line numbers
+        function syncScroll() {
+            const textarea = document.getElementById("file-content");
+            const lineNumbers = document.getElementById("line-numbers");
+            lineNumbers.scrollTop = textarea.scrollTop;
         }
 
         function saveFile() {
@@ -1068,12 +1389,20 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ filename: filePath, content })
             })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
             .then(data => {
                 alert(data.message);
                 backToExplorer();
             })
-            .catch(err => alert("Error saving file: " + err));
+            .catch(err => {
+                alert("Error saving file: " + err);
+                checkAuthentication();
+            });
         }
 
         function backToExplorer() {
@@ -1094,12 +1423,20 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ filename: fullPath, content: "" })
             })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
             .then(data => {
                 alert(data.message);
                 loadFiles(currentPath);
             })
-            .catch(err => alert("Error creating file: " + err));
+            .catch(err => {
+                alert("Error creating file: " + err);
+                checkAuthentication();
+            });
         }
 
         function createNewFolder() {
@@ -1114,12 +1451,20 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ dirname: fullPath })
             })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
             .then(data => {
                 alert(data.message);
                 loadFiles(currentPath);
             })
-            .catch(err => alert("Error creating folder: " + err));
+            .catch(err => {
+                alert("Error creating folder: " + err);
+                checkAuthentication();
+            });
         }
 
         function renameFile(oldName) {
@@ -1135,12 +1480,20 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ old_name: oldPath, new_name: newPath })
             })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
             .then(data => {
                 alert(data.message);
                 loadFiles(currentPath);
             })
-            .catch(err => alert("Error renaming file: " + err));
+            .catch(err => {
+                alert("Error renaming file: " + err);
+                checkAuthentication();
+            });
         }
 
         function uploadFile() {
@@ -1160,14 +1513,22 @@
                 method: "POST",
                 body: formData
             })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
             .then(data => {
                 alert(data.message);
                 fileInput.value = "";
-                document.getElementById('file-label').textContent = "Choose a file or drag here";
+                document.getElementById('file-label').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px; display: inline-block; vertical-align: middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> Choose a file or drag here';
                 loadFiles(currentPath);
             })
-            .catch(err => alert("Error uploading file: " + err));
+            .catch(err => {
+                alert("Error uploading file: " + err);
+                checkAuthentication();
+            });
         }
 
         function deleteFile(filename) {
@@ -1181,8 +1542,19 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ filename: filePath })
             })
-            .then(() => loadFiles(currentPath))
-            .catch(err => alert("Error deleting file: " + err));
+            .then(res => {
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                return res.json();
+            })
+            .then(() => {
+                loadFiles(currentPath);
+            })
+            .catch(err => {
+                alert("Error deleting file: " + err);
+                checkAuthentication();
+            });
         }
 
         function goToConsole() {
@@ -1199,7 +1571,7 @@
         // Update file input label when file is selected
         document.getElementById('fileInput').addEventListener('change', function(event) {
             const fileName = event.target.files[0]?.name || "Choose a file or drag here";
-            document.getElementById('file-label').textContent = fileName;
+            document.getElementById('file-label').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px; display: inline-block; vertical-align: middle;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg> ' + fileName;
         });
         
         // Handle Enter key in move-to field
@@ -1209,10 +1581,57 @@
             }
         });
 
+        // Prevent access to the application if not authenticated
+        function checkAccess() {
+            if (!authToken) {
+                showPasswordModal();
+                document.getElementById('file-explorer').style.display = 'none';
+                document.getElementById('file-editor').style.display = 'none';
+                return false;
+            }
+            return true;
+        }
+        
+        // Check authentication status periodically
+        function startAuthenticationCheck() {
+            setInterval(() => {
+                if (!checkAuthentication()) {
+                    // If authentication fails, show the modal
+                    showPasswordModal();
+                }
+            }, 60000); // Check every minute
+        }
+        
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
+            // Hide content initially
+            document.getElementById('file-explorer').style.display = 'none';
+            document.getElementById('file-editor').style.display = 'none';
+            
+            // Check authentication
             checkAuthentication();
+            
+            // Start periodic authentication check
+            startAuthenticationCheck();
+            
+            // Add event listener for visibility change
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) {
+                    // When tab becomes visible again, check authentication
+                    checkAuthentication();
+                }
+            });
         });
+        
+        // Intercept all fetch requests to check authentication
+        const originalFetch = window.fetch;
+        window.fetch = function() {
+            if (!authToken && arguments[0] !== '/check-password') {
+                checkAuthentication();
+                return Promise.reject(new Error('Authentication required'));
+            }
+            return originalFetch.apply(this, arguments);
+        };
     </script>
 </body>
 </html>
