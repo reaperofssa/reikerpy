@@ -9,3 +9,4 @@ requests
 Flask-cors
 zipfile36
 python-telegram-bot
+python-dotenv
