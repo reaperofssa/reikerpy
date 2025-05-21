@@ -3,373 +3,917 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>File Manager</title>
+    <title>ReikerNx File Manager</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #0d1117;
-            color: #c9d1d9;
-            margin: 0;
-            padding: 20px;
+        :root {
+            --primary-color: #00ff00;
+            --primary-dark: #00cc00;
+            --primary-light: rgba(0, 255, 0, 0.1);
+            --background-dark: #0a0a0a;
+            --background-light: #121212;
+            --background-lighter: #1a1a1a;
+            --text-color: #e0e0e0;
+            --text-muted: #888888;
+            --border-color: rgba(0, 255, 0, 0.2);
+            --danger-color: #ff3333;
+            --shadow-color: rgba(0, 255, 0, 0.15);
+            --transition-speed: 0.2s;
         }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-dark);
+            color: var(--text-color);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .header {
+            background-color: #000;
+            color: var(--primary-color);
+            padding: 12px 20px;
+            text-align: center;
+            box-shadow: 0 1px 3px var(--shadow-color);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-shadow: 0 0 5px rgba(0, 255, 0, 0.3);
+            font-weight: 400;
+        }
+        
         .container {
             max-width: 900px;
-            margin: auto;
-            background: #161b22;
+            margin: 20px auto;
+            background: var(--background-light);
             padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 15px rgba(255, 23, 68, 0.3);
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 0 1px var(--shadow-color);
+            border: 1px solid var(--border-color);
         }
+        
         h2 {
-            color: #ff1744;
+            color: var(--primary-color);
             text-align: center;
             margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px;
+            font-weight: 400;
+            font-size: 20px;
         }
+        
         .file-list {
             list-style: none;
             padding: 0;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
         }
+        
         .file-list li {
-    padding: 12px;
-    border-bottom: 1px solid #30363d;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.file-list li .name {
-    flex-grow: 1; /* Ensures the file/folder name takes up available space */
-    cursor: pointer;
-    transition: color 0.3s;
-}
-
-.file-list li .actions {
-    display: flex;
-    gap: 5px;
-}
-        .file-list li .name.folder {
-            color: yellow;
-            font-weight: bold;
-        }
-        .file-list li .name.file {
-            color: white;
-            font-weight: bold;
-        }
-        .file-list li:hover {
-            background: #21262d;
-        }
-        .buttons {
-            margin-top: 15px;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
-            gap: 10px;
+            align-items: center;
+            transition: background var(--transition-speed);
         }
-        button {
-            background: #ff1744;
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 5px;
+        
+        .file-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .file-list li .name {
+            flex-grow: 1;
             cursor: pointer;
-            font-weight: bold;
-            transition: 0.3s;
+            transition: color var(--transition-speed);
+            padding: 5px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
+        
+        .file-list li .actions {
+            display: flex;
+            gap: 8px;
+            opacity: 0.7;
+            transition: opacity var(--transition-speed);
+        }
+        
+        .file-list li:hover .actions {
+            opacity: 1;
+        }
+        
+        .file-list li .name.folder {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+        
+        .file-list li .name.file {
+            color: white;
+            font-weight: normal;
+        }
+        
+        .file-list li:hover {
+            background: var(--background-lighter);
+        }
+        
+        .action-panels {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .panel {
+            background: var(--background-lighter);
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 15px;
+        }
+        
+        .panel-title {
+            font-size: 14px;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        
+        .buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        
+        button {
+            background: var(--background-lighter);
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all var(--transition-speed);
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
         button:hover {
-            background: #d50000;
+            background: var(--primary-light);
+            box-shadow: 0 0 4px var(--shadow-color);
         }
+        
+        button.primary {
+            background: var(--primary-color);
+            color: black;
+        }
+        
+        button.primary:hover {
+            background: var(--primary-dark);
+        }
+        
         .action-btn {
-    font-size: 12px;
-    padding: 5px 10px;
-    background: #30363d;
-    border: 1px solid #c9d1d9;
-    cursor: pointer;
-}
-
-.action-btn:hover {
-    background: #50575e;
-}
+            font-size: 12px;
+            padding: 4px 8px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            cursor: pointer;
+            border-radius: 3px;
+            transition: all var(--transition-speed);
+        }
+        
+        .action-btn:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        
         textarea {
             width: 100%;
             height: 300px;
-            background: #0d1117;
-            color: #ff8e8e;
-            border: 1px solid #ff1744;
+            background: var(--background-dark);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
             padding: 10px;
-            font-family: monospace;
+            font-family: 'Consolas', 'Monaco', monospace;
+            border-radius: 4px;
+            resize: vertical;
+            font-size: 14px;
+            line-height: 1.5;
+            transition: border var(--transition-speed);
         }
+        
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
         .upload-section {
             display: flex;
             gap: 10px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            flex: 1;
+        }
+        
+        input[type="file"] {
+            opacity: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        .file-input-label {
+            display: block;
+            background: var(--background-lighter);
+            border: 1px dashed var(--border-color);
+            padding: 8px 12px;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        
+        .file-input-label:hover {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        /* Password modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(5px);
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .modal-content {
+            background-color: var(--background-light);
+            padding: 30px;
+            border-radius: 6px;
+            max-width: 360px;
+            width: 90%;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5), 0 0 1px var(--primary-color);
+            border: 1px solid var(--border-color);
+            text-align: center;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        .modal h3 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            font-weight: 400;
+            letter-spacing: 1px;
+            font-size: 18px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-color);
+            font-size: 13px;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            background: var(--background-dark);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 4px;
+            transition: border var(--transition-speed);
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .error-message {
+            color: var(--danger-color);
+            margin-top: 10px;
+            font-size: 13px;
+            min-height: 20px;
+        }
+        
+        .attempts-left {
+            color: var(--text-muted);
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        
+        .modal-logo {
+            margin-bottom: 20px;
+            color: var(--primary-color);
+            font-size: 24px;
+        }
+        
+        .editor-actions {
+            display: flex;
+            justify-content: space-between;
             margin-top: 15px;
         }
-        input[type="file"] {
-            flex: 1;
+        
+        .path-indicator {
+            background: var(--background-lighter);
+            padding: 8px 12px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 13px;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            overflow: auto;
+            white-space: nowrap;
+        }
+        
+        .path-indicator span {
+            color: var(--primary-color);
+        }
+        
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 15px;
+                width: auto;
+            }
+            
+            .action-panels {
+                grid-template-columns: 1fr;
+            }
+            
+            .upload-section {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .file-list li {
+                padding: 10px;
+            }
+            
+            .file-list li .actions {
+                opacity: 1;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+            }
+            
+            .modal-content {
+                width: 95%;
+                padding: 20px;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Password Modal -->
+    <div class="modal" id="password-modal">
+        <div class="modal-content">
+            <div class="modal-logo">
+                <span>⚡</span> ReikerNx
+            </div>
+            <h3>Security Authentication</h3>
+            <div class="form-group">
+                <label for="password">Enter Password</label>
+                <input type="password" id="password" placeholder="Enter system password">
+            </div>
+            <div class="error-message" id="error-message"></div>
+            <div class="attempts-left" id="attempts-left"></div>
+            <button class="primary" onclick="checkPassword()">Authenticate</button>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+        <h1>ReikerNx File Manager</h1>
+    </div>
+
     <div class="container" id="file-explorer">
         <h2>File Explorer</h2>
+        
+        <div class="path-indicator" id="path-indicator">
+            Location: <span>/</span>
+        </div>
+        
+        <div class="action-panels">
+            <div class="panel">
+                <div class="panel-title">File Operations</div>
+                <div class="buttons">
+                    <button onclick="createNewFile()">New File</button>
+                    <button onclick="createNewFolder()">New Folder</button>
+                    <button onclick="goToConsole()">Console</button>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <div class="panel-title">Upload Files</div>
+                <div class="upload-section">
+                    <div class="file-input-wrapper">
+                        <div class="file-input-label" id="file-label">Choose a file or drag here</div>
+                        <input type="file" id="fileInput">
+                    </div>
+                    <button onclick="uploadFile()">Upload</button>
+                </div>
+            </div>
+        </div>
+        
         <ul class="file-list" id="file-list"></ul>
-
-        <div class="upload-section">
-            <input type="file" id="fileInput">
-            <button onclick="uploadFile()">Upload</button>
-        </div>
-
-        <div class="buttons">
-            <button onclick="goToConsole()">Back to Console</button>
-            <button onclick="createNewFile()">New File</button>
-            <button onclick="createNewFolder()">New Folder</button>
-        </div>
     </div>
 
     <div class="container" id="file-editor" style="display: none;">
         <h2 id="editor-title">Editing: </h2>
         <textarea id="file-content"></textarea>
-        <div class="buttons">
+        <div class="editor-actions">
             <button onclick="backToExplorer()">Back</button>
-            <button onclick="saveFile()">Done</button>
+            <button class="primary" onclick="saveFile()">Save Changes</button>
         </div>
     </div>
 
     <script>
         const serverUrl = window.location.origin;
-let currentPath = "";  // Track the current directory path
+        let currentPath = "";  // Track the current directory path
+        let maxLoginAttempts = 5;
+        let loginAttempts = 0;
+        let lockoutEndTime = 0;
+        
+        // Check if user is authenticated
+        function checkAuthentication() {
+            const isAuthenticated = localStorage.getItem('authToken');
+            if (!isAuthenticated) {
+                showPasswordModal();
+                // Hide the main content until authenticated
+                document.getElementById('file-explorer').style.display = 'none';
+                document.getElementById('file-editor').style.display = 'none';
+            } else {
+                document.getElementById('file-explorer').style.display = 'block';
+            }
+        }
+        
+        // Show password modal
+        function showPasswordModal() {
+            const modal = document.getElementById('password-modal');
+            modal.style.display = 'flex';
+            
+            // Check if user is in lockout period
+            const now = Date.now();
+            if (lockoutEndTime > now) {
+                const remainingTime = Math.ceil((lockoutEndTime - now) / 1000);
+                document.getElementById('error-message').textContent = `Too many failed attempts. Try again in ${remainingTime} seconds.`;
+                document.getElementById('password').disabled = true;
+                
+                // Update countdown timer
+                const countdownInterval = setInterval(() => {
+                    const currentTime = Date.now();
+                    if (lockoutEndTime <= currentTime) {
+                        clearInterval(countdownInterval);
+                        document.getElementById('error-message').textContent = '';
+                        document.getElementById('password').disabled = false;
+                        loginAttempts = 0;
+                        updateAttemptsLeft();
+                    } else {
+                        const secondsLeft = Math.ceil((lockoutEndTime - currentTime) / 1000);
+                        document.getElementById('error-message').textContent = `Too many failed attempts. Try again in ${secondsLeft} seconds.`;
+                    }
+                }, 1000);
+            }
+            
+            updateAttemptsLeft();
+            
+            // Focus on password field
+            setTimeout(() => {
+                document.getElementById('password').focus();
+            }, 300);
+        }
+        
+        // Update attempts left message
+        function updateAttemptsLeft() {
+            if (loginAttempts > 0 && loginAttempts < maxLoginAttempts) {
+                document.getElementById('attempts-left').textContent = `${maxLoginAttempts - loginAttempts} attempts remaining`;
+            } else {
+                document.getElementById('attempts-left').textContent = '';
+            }
+        }
+        
+        // Check password
+        async function checkPassword() {
+            const passwordInput = document.getElementById('password');
+            const password = passwordInput.value.trim();
+            
+            if (!password) {
+                document.getElementById('error-message').textContent = 'Please enter a password';
+                passwordInput.focus();
+                return;
+            }
+            
+            // Check if user is in lockout period
+            if (Date.now() < lockoutEndTime) {
+                return;
+            }
+            
+            try {
+                const isValid = await validatePassword(password);
+                
+                if (isValid) {
+                    // Store authentication token
+                    localStorage.setItem('authToken', 'authenticated');
+                    document.getElementById('password-modal').style.display = 'none';
+                    document.getElementById('error-message').textContent = '';
+                    passwordInput.value = '';
+                    loginAttempts = 0;
+                    
+                    // Show the main content
+                    document.getElementById('file-explorer').style.display = 'block';
+                    loadFiles();
+                } else {
+                    loginAttempts++;
+                    updateAttemptsLeft();
+                    
+                    if (loginAttempts >= maxLoginAttempts) {
+                        // Lock out for 30 seconds after 5 failed attempts
+                        lockoutEndTime = Date.now() + (30 * 1000);
+                        document.getElementById('error-message').textContent = 'Too many failed attempts. Try again in 30 seconds.';
+                        document.getElementById('password').disabled = true;
+                        
+                        // Re-enable after lockout period
+                        setTimeout(() => {
+                            document.getElementById('password').disabled = false;
+                            loginAttempts = 0;
+                            updateAttemptsLeft();
+                        }, 30 * 1000);
+                    } else {
+                        document.getElementById('error-message').textContent = 'Invalid password. Please try again.';
+                        passwordInput.focus();
+                        passwordInput.select();
+                    }
+                }
+            } catch (error) {
+                document.getElementById('error-message').textContent = 'Error validating password. Please try again.';
+                console.error('Password validation error:', error);
+            }
+        }
+        
+        // Password validation function (as provided by user)
+        async function validatePassword(inputPassword) {
+            try {
+                const res = await fetch('/check-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password: inputPassword })
+                });
 
-function loadFiles(path = "") {
-    currentPath = path;
+                const data = await res.json();
 
-    const apiUrl = path ? `${serverUrl}/dir/${encodeURIComponent(path)}` : `${serverUrl}/files`;
+                if (res.ok) {
+                    console.log('Access granted:', data.message);
+                    return true;
+                } else {
+                    console.log('Access denied:', data.message);
+                    return false;
+                }
+            } catch (error) {
+                console.error('Network or server error:', error);
+                return false;
+            }
+        }
 
-    fetch(apiUrl)
-        .then(res => res.json())
-        .then(data => {
-            if (data.error) {
-                alert("Error loading files: " + data.error);
+        function loadFiles(path = "") {
+            currentPath = path;
+            updatePathIndicator();
+
+            const apiUrl = path ? `${serverUrl}/dir/${encodeURIComponent(path)}` : `${serverUrl}/files`;
+
+            fetch(apiUrl)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        alert("Error loading files: " + data.error);
+                        return;
+                    }
+
+                    const fileList = document.getElementById("file-list");
+                    fileList.innerHTML = "";
+
+                    if (path) {
+                        const backBtn = document.createElement("li");
+                        backBtn.innerHTML = '<span class="name folder">⬅️ Go Back</span>';
+                        backBtn.onclick = () => navigateBack();
+                        fileList.appendChild(backBtn);
+                    }
+
+                    data.forEach(item => {
+                        const li = document.createElement("li");
+
+                        const nameSpan = document.createElement("span");
+                        nameSpan.innerHTML = item.is_directory ? 
+                            `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg> ${item.name}` : 
+                            `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg> ${item.name}`;
+                        nameSpan.className = item.is_directory ? "folder name" : "file name";
+                        nameSpan.onclick = () => item.is_directory ? openFolder(item.name) : openFile(item.name);
+
+                        const actionsDiv = document.createElement("div");
+                        actionsDiv.className = "actions";
+
+                        const renameBtn = document.createElement("button");
+                        renameBtn.textContent = "Rename";
+                        renameBtn.className = "action-btn";
+                        renameBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            renameFile(item.name);
+                        };
+
+                        const deleteBtn = document.createElement("button");
+                        deleteBtn.textContent = "Delete";
+                        deleteBtn.className = "action-btn";
+                        deleteBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            deleteFile(item.name);
+                        };
+
+                        actionsDiv.appendChild(renameBtn);
+                        actionsDiv.appendChild(deleteBtn);
+
+                        li.appendChild(nameSpan);
+                        li.appendChild(actionsDiv);
+                        fileList.appendChild(li);
+                    });
+                })
+                .catch(err => alert("Error loading files: " + err));
+        }
+        
+        function updatePathIndicator() {
+            const pathElement = document.getElementById("path-indicator");
+            pathElement.innerHTML = `Location: <span>${currentPath || '/'}</span>`;
+        }
+
+        function openFolder(folderName) {
+            const newPath = currentPath ? `${currentPath}/${folderName}` : folderName;
+            loadFiles(newPath);
+        }
+
+        function navigateBack() {
+            if (!currentPath) return;
+            const parentPath = currentPath.split("/").slice(0, -1).join("/");
+            loadFiles(parentPath);
+        }
+
+        function openFile(filename) {
+            const filePath = currentPath ? `${currentPath}/${filename}` : filename;
+
+            if (filename.toLowerCase().endsWith(".zip")) {
+                if (confirm("This is a ZIP file. Do you want to extract it?")) {
+                    fetch(`${serverUrl}/unzip`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ filename: filePath, path: currentPath })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.error) {
+                            alert("Error: " + data.error);
+                        } else {
+                            alert(data.message);
+                            loadFiles(currentPath);
+                        }
+                    })
+                    .catch(err => alert("Error extracting ZIP file: " + err));
+                }
                 return;
             }
 
-            const fileList = document.getElementById("file-list");
-            fileList.innerHTML = "";
+            fetch(`${serverUrl}/files/${encodeURIComponent(filePath)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        alert("Error: " + data.error);
+                        return;
+                    }
+                    document.getElementById("editor-title").textContent = "Editing: " + filePath;
+                    document.getElementById("file-content").value = data.content;
+                    document.getElementById("file-editor").style.display = "block";
+                    document.getElementById("file-explorer").style.display = "none";
+                })
+                .catch(err => alert("Error opening file: " + err));
+        }
 
-            if (path) {
-                const backBtn = document.createElement("li");
-                backBtn.textContent = "⬅️ Go Back";
-                backBtn.className = "folder";
-                backBtn.onclick = () => navigateBack();
-                fileList.appendChild(backBtn);
-            }
+        function saveFile() {
+            const filePath = document.getElementById("editor-title").textContent.replace("Editing: ", "");
+            const content = document.getElementById("file-content").value;
 
-            data.forEach(item => {
-                const li = document.createElement("li");
-
-                const nameSpan = document.createElement("span");
-                nameSpan.textContent = item.name;
-                nameSpan.className = item.is_directory ? "folder name" : "file name";
-                nameSpan.onclick = () => item.is_directory ? openFolder(item.name) : openFile(item.name);
-
-                const actionsDiv = document.createElement("div");
-                actionsDiv.className = "actions"; // New container for buttons
-
-                const renameBtn = document.createElement("button");
-                renameBtn.textContent = "Rename";
-                renameBtn.className = "action-btn";
-                renameBtn.onclick = () => renameFile(item.name);
-
-                const deleteBtn = document.createElement("button");
-                deleteBtn.textContent = "Delete";
-                deleteBtn.className = "action-btn";
-                deleteBtn.onclick = () => deleteFile(item.name);
-
-                actionsDiv.appendChild(renameBtn);
-                actionsDiv.appendChild(deleteBtn);
-
-                li.appendChild(nameSpan);
-                li.appendChild(actionsDiv); // Place actions at the rightmost end
-                fileList.appendChild(li);
-            });
-        })
-        .catch(err => alert("Error loading files: " + err));
-}
-
-function openFolder(folderName) {
-    const newPath = currentPath ? `${currentPath}/${folderName}` : folderName;
-    loadFiles(newPath);
-}
-
-function navigateBack() {
-    if (!currentPath) return;
-    const parentPath = currentPath.split("/").slice(0, -1).join("/");
-    loadFiles(parentPath);
-}
-
-function openFile(filename) {
-    const filePath = currentPath ? `${currentPath}/${filename}` : filename;
-
-    if (filename.toLowerCase().endsWith(".zip")) {
-        if (confirm("This is a ZIP file. Do you want to extract it?")) {
-            fetch(`${serverUrl}/unzip`, {
+            fetch(`${serverUrl}/edit`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ filename: filePath, path: currentPath }) // Ensure correct path
+                body: JSON.stringify({ filename: filePath, content })
             })
             .then(res => res.json())
             .then(data => {
-                if (data.error) {
-                    alert("Error: " + data.error);
-                } else {
-                    alert(data.message);
-                    loadFiles(currentPath); // Refresh file explorer in the correct directory
-                }
+                alert(data.message);
+                backToExplorer();
             })
-            .catch(err => alert("Error extracting ZIP file: " + err));
+            .catch(err => alert("Error saving file: " + err));
         }
-        return;
-    }
 
-    fetch(`${serverUrl}/files/${encodeURIComponent(filePath)}`)
-        .then(res => res.json())
-        .then(data => {
-            if (data.error) {
-                alert("Error: " + data.error);
+        function backToExplorer() {
+            document.getElementById("file-editor").style.display = "none";
+            document.getElementById("file-explorer").style.display = "block";
+            loadFiles(currentPath);
+        }
+
+        function createNewFile() {
+            const filename = prompt("Enter new file name:");
+            if (!filename) return;
+            
+            const fullPath = currentPath ? `${currentPath}/${filename}` : filename;
+
+            fetch(`${serverUrl}/create`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ filename: fullPath, content: "" })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message);
+                loadFiles(currentPath);
+            })
+            .catch(err => alert("Error creating file: " + err));
+        }
+
+        function createNewFolder() {
+            const dirname = prompt("Enter new folder name:");
+            if (!dirname) return;
+
+            const fullPath = currentPath ? `${currentPath}/${dirname}` : dirname;
+
+            fetch(`${serverUrl}/mkdir`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ dirname: fullPath })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message);
+                loadFiles(currentPath);
+            })
+            .catch(err => alert("Error creating folder: " + err));
+        }
+
+        function renameFile(oldName) {
+            const newName = prompt("Rename file to:", oldName);
+            if (!newName || newName === oldName) return;
+
+            const oldPath = currentPath ? `${currentPath}/${oldName}` : oldName;
+            const newPath = currentPath ? `${currentPath}/${newName}` : newName;
+
+            fetch(`${serverUrl}/rename`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ old_name: oldPath, new_name: newPath })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message);
+                loadFiles(currentPath);
+            })
+            .catch(err => alert("Error renaming file: " + err));
+        }
+
+        function uploadFile() {
+            const fileInput = document.getElementById("fileInput");
+            if (!fileInput.files.length) {
+                alert("Please select a file to upload.");
                 return;
             }
-            document.getElementById("editor-title").textContent = "Editing: " + filePath;
-            document.getElementById("file-content").value = data.content;
-            document.getElementById("file-editor").style.display = "block";
-            document.getElementById("file-explorer").style.display = "none";
-        })
-        .catch(err => alert("Error opening file: " + err));
-}
 
-function saveFile() {
-    const filePath = document.getElementById("editor-title").textContent.replace("Editing: ", "");
-    const content = document.getElementById("file-content").value;
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("path", currentPath);
 
-    fetch(`${serverUrl}/edit`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filename: filePath, content })
-    })
-    .then(res => res.json())
-    .then(data => {
-        alert(data.message);
-        backToExplorer();
-    })
-    .catch(err => alert("Error saving file: " + err));
-}
+            fetch(`${serverUrl}/upload`, {
+                method: "POST",
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message);
+                fileInput.value = "";
+                document.getElementById('file-label').textContent = "Choose a file or drag here";
+                loadFiles(currentPath);
+            })
+            .catch(err => alert("Error uploading file: " + err));
+        }
 
-function backToExplorer() {
-    document.getElementById("file-editor").style.display = "none";
-    document.getElementById("file-explorer").style.display = "block";
-    loadFiles(currentPath);
-}
+        function deleteFile(filename) {
+            if (!confirm(`Are you sure you want to delete "${filename}"?`)) return;
 
-function createNewFile() {
-    const filename = prompt("Enter new file name:");
-    if (!filename) return;
-    
-    const fullPath = currentPath ? `${currentPath}/${filename}` : filename;
+            const filePath = currentPath ? `${currentPath}/${filename}` : filename;
 
-    fetch(`${serverUrl}/create`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filename: fullPath, content: "" })
-    })
-    .then(res => res.json())
-    .then(data => {
-        alert(data.message);
-        loadFiles(currentPath);
-    })
-    .catch(err => alert("Error creating file: " + err));
-}
+            fetch(`${serverUrl}/delete`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ filename: filePath })
+            })
+            .then(() => loadFiles(currentPath))
+            .catch(err => alert("Error deleting file: " + err));
+        }
 
-function createNewFolder() {
-    const dirname = prompt("Enter new folder name:");
-    if (!dirname) return;
+        function goToConsole() {
+            window.location.href = "/";
+        }
 
-    const fullPath = currentPath ? `${currentPath}/${dirname}` : dirname;
+        // Handle Enter key in password field
+        document.getElementById('password').addEventListener('keyup', function(event) {
+            if (event.key === 'Enter') {
+                checkPassword();
+            }
+        });
+        
+        // Update file input label when file is selected
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const fileName = event.target.files[0]?.name || "Choose a file or drag here";
+            document.getElementById('file-label').textContent = fileName;
+        });
 
-    fetch(`${serverUrl}/mkdir`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dirname: fullPath })
-    })
-    .then(res => res.json())
-    .then(data => {
-        alert(data.message);
-        loadFiles(currentPath);
-    })
-    .catch(err => alert("Error creating folder: " + err));
-}
-
-function renameFile(oldName) {
-    const newName = prompt("Rename file to:", oldName);
-    if (!newName || newName === oldName) return;
-
-    const oldPath = currentPath ? `${currentPath}/${oldName}` : oldName;
-    const newPath = currentPath ? `${currentPath}/${newName}` : newName;
-
-    fetch(`${serverUrl}/rename`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ old_name: oldPath, new_name: newPath })
-    })
-    .then(res => res.json())
-    .then(data => {
-        alert(data.message);
-        loadFiles(currentPath);
-    })
-    .catch(err => alert("Error renaming file: " + err));
-}
-
-function uploadFile() {
-    const fileInput = document.getElementById("fileInput");
-    if (!fileInput.files.length) {
-        alert("Please select a file to upload.");
-        return;
-    }
-
-    const file = fileInput.files[0];
-    const formData = new FormData();
-    formData.append("file", file);
-    
-    // Append the current path so files are uploaded to the correct directory
-    formData.append("path", currentPath); 
-
-    fetch(`${serverUrl}/upload`, {
-        method: "POST",
-        body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-        alert(data.message);
-        fileInput.value = ""; // Clear the file input
-        loadFiles(currentPath); // Refresh the file list
-    })
-    .catch(err => alert("Error uploading file: " + err));
-}
-
-function deleteFile(filename) {
-    if (!confirm(`Are you sure you want to delete "${filename}"?`)) return;
-
-    const filePath = currentPath ? `${currentPath}/${filename}` : filename;
-
-    fetch(`${serverUrl}/delete`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ filename: filePath })
-    })
-    .then(() => loadFiles(currentPath))
-    .catch(err => alert("Error deleting file: " + err));
-}
-
-function goToConsole() {
-    window.location.href = "/";
-}
-
-loadFiles();
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuthentication();
+        });
+        
+        // Check for authentication on page load
+        window.addEventListener('load', function() {
+            checkAuthentication();
+        });
+        
+        // Prevent access to the application if not authenticated
+        function checkAccess() {
+            const isAuthenticated = localStorage.getItem('authToken');
+            if (!isAuthenticated) {
+                showPasswordModal();
+                document.getElementById('file-explorer').style.display = 'none';
+                document.getElementById('file-editor').style.display = 'none';
+                return false;
+            }
+            return true;
+        }
+        
+        // Override all API functions to check authentication first
+        const originalLoadFiles = loadFiles;
+        loadFiles = function(path) {
+            if (checkAccess()) {
+                originalLoadFiles(path);
+            }
+        };
     </script>
 </body>
 </html>
