@@ -4,444 +4,443 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Genify+ File Manager</title>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #a78bfa;
-            --primary-dark: #8b5cf6;
-            --primary-light: rgba(167, 139, 250, 0.1);
-            --background-dark: #0a0a0a;
-            --background-light: #121212;
-            --background-lighter: #1a1a1a;
-            --text-color: #ffffff;
+            --primary: #a855f7;
+            --primary-light: rgba(168, 85, 247, 0.2);
+            --primary-dark: #9333ea;
+            --background: #000000;
+            --background-light: #0a0a0a;
+            --background-lighter: #121212;
+            --text: #ffffff;
             --text-muted: #888888;
-            --border-color: rgba(167, 139, 250, 0.2);
-            --danger-color: #ff3333;
-            --shadow-color: rgba(167, 139, 250, 0.15);
-            --transition-speed: 0.2s;
+            --border: rgba(255, 255, 255, 0.1);
+            --danger: #ff3333;
+            --success: #00ff00;
+            --transition: 0.2s ease;
         }
-        
+
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
         }
-        
+
         html, body {
             width: 100%;
             height: 100%;
             margin: 0;
             padding: 0;
+            font-family: 'Nunito', sans-serif;
+            background: var(--background);
+            color: var(--text);
+            overflow: hidden;
         }
-        
+
         body {
-            font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background-color: var(--background-dark);
-            color: var(--text-color);
             display: flex;
             flex-direction: column;
-            overflow: hidden;
-            min-height: 100vh;
         }
-        
-        canvas#particleCanvas {
+
+        /* Particle background */
+        canvas#particle-canvas {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            z-index: 0;
             pointer-events: none;
+            z-index: 0;
         }
-        
-        .content-wrapper {
-            position: relative;
-            z-index: 1;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-            overflow: hidden;
-        }
-        
+
         .header {
             background: linear-gradient(to right, #000000, #0a0a0a, #000000);
+            border-bottom: 1px solid var(--border);
             padding: 15px 20px;
-            border-bottom: 1px solid var(--border-color);
+            z-index: 100;
+            position: relative;
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
+            justify-content: space-between;
         }
-        
+
         .header-left {
             display: flex;
             align-items: center;
-            gap: 12px;
-        }
-        
-        .logo {
+            gap: 10px;
             font-size: 24px;
-            color: var(--primary-color);
-            text-shadow: 0 0 10px var(--primary-color);
-            font-weight: 700;
-            letter-spacing: 1px;
-        }
-        
-        .header h1 {
-            font-size: 20px;
-            color: var(--text-color);
-            margin: 0;
             font-weight: 600;
+            color: var(--primary);
+            text-shadow: 0 0 10px var(--primary);
         }
-        
+
         .header-right {
             display: flex;
-            gap: 10px;
             align-items: center;
+            gap: 15px;
         }
-        
+
         .theme-selector {
             display: flex;
-            gap: 6px;
+            gap: 8px;
+            align-items: center;
         }
-        
+
         .theme-color {
             width: 24px;
             height: 24px;
-            border-radius: 50%;
+            border-radius: 4px;
             cursor: pointer;
-            border: 2px solid transparent;
-            transition: all 0.3s;
+            border: 2px solid var(--border);
+            transition: all var(--transition);
         }
-        
+
         .theme-color:hover {
             transform: scale(1.1);
         }
-        
+
         .theme-color.active {
-            border-color: var(--text-color);
-            box-shadow: 0 0 8px currentColor;
+            border-color: var(--text);
+            box-shadow: 0 0 10px currentColor;
         }
-        
+
         .container {
             flex: 1;
-            overflow: hidden;
             display: flex;
-            flex-direction: column;
+            overflow: hidden;
             position: relative;
+            z-index: 10;
         }
-        
+
+        .sidebar {
+            width: 250px;
+            background: var(--background-light);
+            border-right: 1px solid var(--border);
+            padding: 15px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .sidebar.active {
+            display: block;
+        }
+
         .main-content {
             flex: 1;
-            overflow-y: auto;
-            padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
-        }
-        
-        .path-indicator {
-            background: rgba(167, 139, 250, 0.05);
-            padding: 12px 16px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 13px;
-            color: var(--text-muted);
-            position: sticky;
-            top: 0;
-            z-index: 10;
-            backdrop-filter: blur(5px);
-        }
-        
-        .path-indicator span {
-            color: var(--primary-color);
-            font-weight: 500;
-        }
-        
-        .action-panels {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 15px;
-        }
-        
-        .panel {
-            background: rgba(18, 18, 18, 0.8);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 16px;
-            backdrop-filter: blur(10px);
-            transition: all 0.3s;
-            position: relative;
             overflow: hidden;
         }
-        
-        .panel:hover {
-            border-color: var(--primary-color);
-            box-shadow: 0 0 12px var(--shadow-color);
-            transform: translateY(-2px);
-        }
-        
-        .panel-title {
-            font-size: 13px;
-            color: var(--primary-color);
-            margin-bottom: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .buttons {
+
+        .file-explorer {
+            flex: 1;
             display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 15px;
+            gap: 15px;
         }
-        
+
+        .file-explorer.hidden {
+            display: none;
+        }
+
+        .editor-view {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 15px;
+            gap: 15px;
+        }
+
+        .editor-view.hidden {
+            display: none;
+        }
+
+        .path-indicator {
+            background: var(--background-lighter);
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--text-muted);
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+
+        .path-indicator span {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .toolbar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
         button {
-            background: transparent;
-            color: var(--primary-color);
-            border: 1px solid var(--border-color);
-            padding: 8px 14px;
+            background: var(--background-lighter);
+            color: var(--primary);
+            border: 1px solid var(--border);
+            padding: 8px 12px;
             border-radius: 6px;
             cursor: pointer;
             font-weight: 500;
-            transition: all 0.3s;
             font-size: 13px;
             font-family: 'Nunito', sans-serif;
+            transition: all var(--transition);
             display: inline-flex;
             align-items: center;
             gap: 6px;
             white-space: nowrap;
         }
-        
+
         button:hover {
+            border-color: var(--primary);
             background: var(--primary-light);
-            border-color: var(--primary-color);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px var(--shadow-color);
+            box-shadow: 0 0 8px rgba(168, 85, 247, 0.3);
         }
-        
+
         button.primary {
-            background: var(--primary-color);
-            color: #000;
-            border-color: var(--primary-color);
+            background: var(--primary);
+            color: black;
         }
-        
+
         button.primary:hover {
             background: var(--primary-dark);
-            border-color: var(--primary-dark);
         }
-        
+
         button.danger {
-            color: var(--danger-color);
-            border-color: var(--danger-color);
+            color: var(--danger);
+            border-color: var(--danger);
         }
-        
+
         button.danger:hover {
             background: rgba(255, 51, 51, 0.1);
         }
-        
-        .upload-section {
+
+        .file-list {
+            flex: 1;
+            background: var(--background-lighter);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            overflow: hidden;
             display: flex;
-            gap: 10px;
             flex-direction: column;
         }
-        
-        .file-input-wrapper {
-            position: relative;
-            flex: 1;
-        }
-        
-        input[type="file"] {
-            opacity: 0;
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            cursor: pointer;
-        }
-        
-        .file-input-label {
-            display: block;
-            background: var(--background-dark);
-            border: 1px dashed var(--border-color);
-            padding: 12px;
-            border-radius: 6px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-        
-        .file-input-label:hover {
-            border-color: var(--primary-color);
-            color: var(--primary-color);
-        }
-        
-        .file-list {
-            list-style: none;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            overflow: hidden;
-            background: rgba(18, 18, 18, 0.6);
-            backdrop-filter: blur(10px);
-        }
-        
-        .file-list li {
-            padding: 12px;
-            border-bottom: 1px solid var(--border-color);
+
+        .file-list-header {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            transition: all 0.2s;
-            position: relative;
+            padding: 10px 15px;
+            background: var(--background-light);
+            border-bottom: 1px solid var(--border);
+            gap: 10px;
+            flex-shrink: 0;
         }
-        
-        .file-list li:last-child {
-            border-bottom: none;
+
+        .file-list-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
-        
-        .file-list li:hover {
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            border-bottom: 1px solid var(--border);
+            transition: all var(--transition);
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .file-item:hover {
+            background: var(--background-light);
+        }
+
+        .file-item.selected {
             background: var(--primary-light);
         }
-        
-        .file-name {
-            flex-grow: 1;
+
+        .file-checkbox {
+            width: 18px;
+            height: 18px;
             cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        .file-name {
+            flex: 1;
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-size: 14px;
-            transition: color 0.2s;
-        }
-        
-        .file-name.folder {
-            color: var(--primary-color);
-            font-weight: 600;
-        }
-        
-        .file-name.file {
-            color: var(--text-color);
-        }
-        
-        .file-name:hover {
-            color: var(--primary-color);
-        }
-        
-        .file-actions {
-            display: flex;
             gap: 8px;
-            opacity: 0.6;
-            transition: opacity 0.2s;
+            min-width: 0;
+            overflow: hidden;
         }
-        
-        .file-list li:hover .file-actions {
-            opacity: 1;
+
+        .file-name svg {
+            flex-shrink: 0;
         }
-        
-        .action-btn {
-            font-size: 11px;
-            padding: 5px 10px;
-            background: transparent;
-            border: 1px solid var(--border-color);
-            color: var(--text-muted);
-        }
-        
-        .action-btn:hover {
-            color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        
-        /* EDITOR STYLES - FULL SCREEN */
-        .editor-fullscreen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 1000;
-            background: var(--background-dark);
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .editor-header {
-            background: linear-gradient(to right, #000000, #0a0a0a, #000000);
-            border-bottom: 1px solid var(--border-color);
-            padding: 12px 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .editor-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--primary-color);
-            flex-grow: 1;
+
+        .file-name span {
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-        
-        .editor-actions {
-            display: flex;
-            gap: 8px;
+
+        .file-name.folder span {
+            color: var(--primary);
+            font-weight: 600;
         }
-        
+
+        .file-actions {
+            display: flex;
+            gap: 6px;
+            opacity: 0;
+            transition: opacity var(--transition);
+            flex-shrink: 0;
+        }
+
+        .file-item:hover .file-actions {
+            opacity: 1;
+        }
+
+        .file-action-btn {
+            padding: 4px 8px;
+            font-size: 11px;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+        }
+
+        .file-action-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .bulk-actions {
+            background: var(--background-lighter);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px 15px;
+            display: none;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            animation: slideIn 0.3s ease;
+        }
+
+        .bulk-actions.active {
+            display: flex;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .bulk-actions-info {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        .bulk-actions-info span {
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .move-input {
+            padding: 6px 10px;
+            background: var(--background-light);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: 'Nunito', sans-serif;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .move-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 8px rgba(168, 85, 247, 0.3);
+        }
+
+        .editor-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--background-lighter);
+            padding: 12px 15px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--text-muted);
+            font-family: 'Courier New', monospace;
+        }
+
         .editor-container {
             flex: 1;
             display: flex;
+            background: var(--background-lighter);
+            border: 1px solid var(--border);
+            border-radius: 6px;
             overflow: hidden;
-            position: relative;
+            gap: 0;
         }
-        
+
         .line-numbers {
             width: 50px;
-            background: var(--background-darker);
+            background: var(--background-light);
+            border-right: 1px solid var(--border);
+            padding: 10px 0;
+            text-align: right;
             color: var(--text-muted);
             font-family: 'Courier New', monospace;
-            font-size: 14px;
+            font-size: 13px;
             line-height: 1.6;
-            padding: 16px 10px;
-            text-align: right;
-            border-right: 1px solid var(--border-color);
             user-select: none;
             overflow: hidden;
-            background: rgba(0, 0, 0, 0.3);
+            flex-shrink: 0;
         }
-        
-        .editor-wrapper {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            position: relative;
+
+        .line-number {
+            padding: 0 8px;
+            display: block;
+            height: 1.6em;
         }
-        
-        textarea {
+
+        .editor-textarea {
             flex: 1;
-            width: 100%;
-            height: 100%;
-            background: var(--background-dark);
-            color: var(--text-color);
+            background: var(--background);
+            color: var(--text);
             border: none;
-            padding: 16px 16px;
+            padding: 10px 15px;
             font-family: 'Courier New', monospace;
-            font-size: 14px;
+            font-size: 13px;
             line-height: 1.6;
             resize: none;
-            overflow: auto;
-            tab-size: 4;
-            -moz-tab-size: 4;
+            overflow-y: auto;
+            white-space: pre;
+            word-wrap: normal;
         }
-        
-        textarea:focus {
+
+        .editor-textarea:focus {
             outline: none;
         }
-        
-        /* Modal */
+
+        .editor-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -450,653 +449,874 @@
             width: 100%;
             height: 100%;
             background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(5px);
             z-index: 2000;
             justify-content: center;
             align-items: center;
-            backdrop-filter: blur(5px);
-            animation: fadeIn 0.3s ease-out;
+            animation: fadeIn 0.3s ease;
         }
-        
+
+        .modal.active {
+            display: flex;
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
         }
-        
-        @keyframes slideIn {
-            from { transform: translateY(-20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        
+
         .modal-content {
-            background: linear-gradient(135deg, var(--background-light) 0%, var(--background-lighter) 100%);
+            background: var(--background-lighter);
+            border: 1px solid var(--border);
+            border-radius: 8px;
             padding: 30px;
-            border-radius: 12px;
             max-width: 400px;
             width: 90%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 20px var(--shadow-color);
-            border: 1px solid var(--border-color);
-            animation: slideIn 0.3s ease-out;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
+            animation: slideUp 0.3s ease;
         }
-        
-        .modal-content::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: linear-gradient(to right, var(--primary-color), transparent);
+
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
-        
-        .modal h3 {
-            color: var(--primary-color);
+
+        .modal h2 {
+            color: var(--primary);
             margin-bottom: 20px;
-            font-size: 18px;
-            font-weight: 600;
+            font-size: 20px;
         }
-        
+
         .form-group {
-            margin-bottom: 18px;
-            text-align: left;
+            margin-bottom: 15px;
         }
-        
+
         .form-group label {
             display: block;
-            margin-bottom: 8px;
-            color: var(--text-color);
+            margin-bottom: 6px;
+            color: var(--text);
             font-size: 13px;
             font-weight: 500;
         }
-        
+
         .form-group input {
             width: 100%;
-            padding: 10px 12px;
-            background: var(--background-dark);
-            border: 1px solid var(--border-color);
-            color: var(--text-color);
-            border-radius: 6px;
-            font-size: 13px;
+            padding: 8px 12px;
+            background: var(--background-light);
+            border: 1px solid var(--border);
+            color: var(--text);
+            border-radius: 4px;
             font-family: 'Nunito', sans-serif;
-            transition: all 0.2s;
+            font-size: 13px;
+            transition: all var(--transition);
         }
-        
+
         .form-group input:focus {
             outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 8px var(--shadow-color);
+            border-color: var(--primary);
+            box-shadow: 0 0 8px rgba(168, 85, 247, 0.3);
         }
-        
+
         .error-message {
-            color: var(--danger-color);
-            margin-top: 10px;
+            color: var(--danger);
             font-size: 12px;
-            min-height: 18px;
+            margin-top: 5px;
+            min-height: 16px;
         }
-        
-        .attempts-left {
-            color: var(--text-muted);
-            font-size: 11px;
-            margin-top: 8px;
-        }
-        
-        .modal-logo {
-            margin-bottom: 20px;
-            color: var(--primary-color);
-            font-size: 28px;
+
+        .modal-actions {
             display: flex;
-            align-items: center;
-            justify-content: center;
             gap: 10px;
+            margin-top: 20px;
         }
-        
-        .loading {
+
+        .modal-actions button {
+            flex: 1;
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 6px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition);
+            background: var(--background-light);
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .upload-zone.drag-over {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .loading-spinner {
             display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 3px solid var(--primary-light);
-            border-top-color: var(--primary-color);
+            width: 14px;
+            height: 14px;
+            border: 2px solid var(--border);
+            border-top-color: var(--primary);
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
-        
+
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-        
-        /* Mobile */
+
         @media (max-width: 768px) {
-            .action-panels {
-                grid-template-columns: 1fr;
-            }
-            
             .header {
                 flex-direction: column;
-                align-items: flex-start;
-                gap: 12px;
+                gap: 10px;
             }
-            
-            .header-right {
-                width: 100%;
-                justify-content: space-between;
+
+            .toolbar {
+                grid-template-columns: repeat(2, 1fr);
             }
-            
-            .main-content {
-                padding: 12px;
-                gap: 12px;
+
+            .file-item {
+                padding: 8px 10px;
             }
-            
-            .modal-content {
-                width: 95%;
-                padding: 20px;
+
+            .file-actions {
+                opacity: 1;
             }
-            
-            textarea {
-                font-size: 16px;
+
+            .bulk-actions {
+                flex-direction: column;
+                align-items: stretch;
             }
-            
-            .editor-header {
-                flex-wrap: wrap;
-                padding: 10px 16px;
+
+            .move-input {
+                min-width: auto;
             }
-            
-            .editor-title {
-                font-size: 14px;
+
+            .line-numbers {
+                width: 35px;
+                font-size: 11px;
             }
-            
-            .buttons {
-                gap: 6px;
-            }
-            
-            button {
-                padding: 6px 10px;
+
+            .editor-textarea {
                 font-size: 12px;
+            }
+
+            .modal-content {
+                padding: 20px;
             }
         }
     </style>
 </head>
 <body>
-    <canvas id="particleCanvas"></canvas>
-    
-    <div class="content-wrapper">
-        <!-- Header -->
-        <div class="header">
-            <div class="header-left">
-                <div class="logo">✨</div>
-                <h1>Genify+ File Manager</h1>
-            </div>
-            <div class="header-right">
-                <div class="theme-selector" id="themeSelector"></div>
-                <button onclick="logout()" class="danger">Logout</button>
-            </div>
+    <!-- Particle Canvas -->
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            ✨ Genify+
         </div>
+        <div class="header-right">
+            <div class="theme-selector" id="theme-selector"></div>
+            <button onclick="logoutUser()">Logout</button>
+        </div>
+    </div>
 
-        <!-- Main Container -->
-        <div class="container">
-            <div class="main-content" id="fileExplorer" style="display: none;">
-                <div class="path-indicator" id="pathIndicator">Location: <span>/</span></div>
-                
-                <div class="action-panels">
-                    <div class="panel">
-                        <div class="panel-title">File Operations</div>
-                        <div class="buttons">
-                            <button onclick="createNewFile()">➕ New File</button>
-                            <button onclick="createNewFolder()">📁 New Folder</button>
-                        </div>
-                    </div>
-                    
-                    <div class="panel">
-                        <div class="panel-title">Upload & Download</div>
-                        <div class="upload-section">
-                            <div class="file-input-wrapper">
-                                <div class="file-input-label">📤 Choose File</div>
-                                <input type="file" id="fileInput">
-                            </div>
-                            <button class="primary" onclick="uploadFile()">Upload</button>
-                        </div>
-                    </div>
+    <!-- Main Container -->
+    <div class="container">
+        <div class="main-content">
+            <!-- File Explorer View -->
+            <div class="file-explorer" id="file-explorer">
+                <div class="path-indicator" id="path-indicator">Location: <span>/</span></div>
+
+                <div class="toolbar">
+                    <button onclick="createNewFile()">➕ New File</button>
+                    <button onclick="createNewFolder()">📁 New Folder</button>
+                    <button onclick="downloadFile()">⬇️ Download</button>
+                    <button onclick="showUploadModal()">⬆️ Upload</button>
                 </div>
-                
-                <ul class="file-list" id="fileList"></ul>
+
+                <div class="bulk-actions" id="bulk-actions">
+                    <div class="bulk-actions-info">Selected: <span id="selected-count">0</span> items</div>
+                    <button onclick="selectAllFiles(false)">Deselect All</button>
+                    <button onclick="selectAllFiles(true)">Select All</button>
+                    <button class="danger" onclick="deleteSelectedFiles()">🗑️ Delete</button>
+                    <input type="text" class="move-input" id="move-path" placeholder="../destination/path">
+                    <button onclick="moveSelectedFiles()">↪️ Move</button>
+                </div>
+
+                <div class="file-list">
+                    <div class="file-list-header">
+                        <input type="checkbox" class="file-checkbox" id="select-all" onchange="toggleSelectAll()">
+                        <span>Files & Folders</span>
+                    </div>
+                    <div class="file-list-content" id="file-list"></div>
+                </div>
             </div>
 
-            <!-- File Editor Fullscreen -->
-            <div class="editor-fullscreen" id="editorFullscreen" style="display: none;">
+            <!-- Editor View -->
+            <div class="editor-view hidden" id="editor-view">
                 <div class="editor-header">
-                    <div class="editor-title" id="editorTitle">Editing: </div>
-                    <div class="editor-actions">
-                        <button onclick="backToExplorer()">← Back</button>
-                        <button class="primary" onclick="saveFile()">💾 Save</button>
-                    </div>
+                    <span id="editor-path">Editing: /</span>
+                    <span id="editor-info">Line: 1, Col: 1</span>
                 </div>
-                
+
                 <div class="editor-container">
-                    <div class="line-numbers" id="lineNumbers"></div>
-                    <div class="editor-wrapper">
-                        <textarea id="fileContent" spellcheck="false"></textarea>
-                    </div>
+                    <div class="line-numbers" id="line-numbers"></div>
+                    <textarea class="editor-textarea" id="editor-textarea" onscroll="syncScroll()" oninput="updateLineNumbers()"></textarea>
+                </div>
+
+                <div class="editor-actions">
+                    <button onclick="backToExplorer()">← Back</button>
+                    <button class="primary" onclick="saveFile()">💾 Save</button>
+                    <button onclick="downloadFileContent()">⬇️ Download</button>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Password Modal -->
-    <div class="modal" id="passwordModal">
+    <div class="modal" id="password-modal">
         <div class="modal-content">
-            <div class="modal-logo">🔐</div>
-            <h3>Security Authentication</h3>
+            <h2>🔐 Authentication</h2>
             <div class="form-group">
-                <label for="password">Enter Password</label>
-                <input type="password" id="password" placeholder="Enter system password">
+                <label>Password</label>
+                <input type="password" id="password-input" placeholder="Enter password" onkeypress="handlePasswordKeypress(event)">
             </div>
-            <div class="error-message" id="errorMessage"></div>
-            <div class="attempts-left" id="attemptsLeft"></div>
-            <button class="primary" style="width: 100%" onclick="checkPassword()">Authenticate</button>
+            <div class="error-message" id="password-error"></div>
+            <div class="modal-actions">
+                <button class="primary" onclick="checkPassword()">Authenticate</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Modal -->
+    <div class="modal" id="upload-modal">
+        <div class="modal-content">
+            <h2>📤 Upload File</h2>
+            <div class="upload-zone" id="upload-zone" ondragover="handleDragOver(event)" ondrop="handleDrop(event)">
+                <p>Drag files here or click to select</p>
+            </div>
+            <div class="form-group" style="margin-top: 15px; display: none;" id="file-selected">
+                <label>Selected File</label>
+                <input type="text" id="selected-filename" disabled>
+            </div>
+            <div class="modal-actions">
+                <button onclick="closeUploadModal()">Cancel</button>
+                <button class="primary" onclick="uploadFile()">Upload</button>
+            </div>
         </div>
     </div>
 
     <script>
+        // ============ Configuration ============
         const serverUrl = window.location.origin;
-        const themes = [
-            { name: 'Purple', primary: '#a78bfa', dark: '#8b5cf6', light: 'rgba(167, 139, 250, 0.1)' },
-            { name: 'Green', primary: '#4ade80', dark: '#22c55e', light: 'rgba(74, 222, 128, 0.1)' },
-            { name: 'Blue', primary: '#60a5fa', dark: '#3b82f6', light: 'rgba(96, 165, 250, 0.1)' },
-            { name: 'Pink', primary: '#f472b6', dark: '#ec4899', light: 'rgba(244, 114, 182, 0.1)' },
-            { name: 'Cyan', primary: '#22d3ee', dark: '#06b6d4', light: 'rgba(34, 211, 238, 0.1)' },
-            { name: 'Yellow', primary: '#fbbf24', dark: '#f59e0b', light: 'rgba(251, 191, 36, 0.1)' }
+        const TOKEN_DURATION = 30 * 24 * 60 * 60 * 1000; // 30 days
+        const COLORS = [
+            { name: 'Purple', hex: '#a855f7' },
+            { name: 'Green', hex: '#10b981' },
+            { name: 'Blue', hex: '#3b82f6' },
+            { name: 'Pink', hex: '#ec4899' },
+            { name: 'Orange', hex: '#f97316' },
+            { name: 'Cyan', hex: '#06b6d4' }
         ];
-        
-        let currentTheme = themes[0];
-        let currentPath = '';
+
+        // ============ Global State ============
         let authToken = null;
-        let loginAttempts = 0;
-        const maxLoginAttempts = 5;
-        let lockoutEndTime = 0;
-        
-        // Initialize
+        let currentPath = '';
+        let selectedFiles = new Set();
+        let currentEditorFile = null;
+        let uploadedFile = null;
+        let currentTheme = 0;
+
+        // ============ Initialize ============
         document.addEventListener('DOMContentLoaded', () => {
-            initParticles();
-            initThemeSelector();
+            initializeParticles();
+            initializeThemeSelector();
             checkAuthentication();
-            document.getElementById('password').addEventListener('keyup', (e) => e.key === 'Enter' && checkPassword());
+            setupEventListeners();
         });
-        
-        // Particle Animation
-        function initParticles() {
-            const canvas = document.getElementById('particleCanvas');
+
+        // ============ Theme System ============
+        function initializeThemeSelector() {
+            const selector = document.getElementById('theme-selector');
+            COLORS.forEach((color, index) => {
+                const div = document.createElement('div');
+                div.className = `theme-color ${index === 0 ? 'active' : ''}`;
+                div.style.backgroundColor = color.hex;
+                div.onclick = () => setTheme(index);
+                selector.appendChild(div);
+            });
+            setTheme(0);
+        }
+
+        function setTheme(index) {
+            currentTheme = index;
+            const color = COLORS[index];
+            document.documentElement.style.setProperty('--primary', color.hex);
+            document.documentElement.style.setProperty('--primary-dark', adjustColor(color.hex, -20));
+            document.documentElement.style.setProperty('--primary-light', color.hex + '20');
+
+            document.querySelectorAll('.theme-color').forEach((el, i) => {
+                el.classList.toggle('active', i === index);
+            });
+        }
+
+        function adjustColor(hex, percent) {
+            const num = parseInt(hex.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = Math.max(0, Math.min(255, (num >> 16) + amt));
+            const G = Math.max(0, Math.min(255, (num >> 8 & 0x00FF) + amt));
+            const B = Math.max(0, Math.min(255, (num & 0x0000FF) + amt));
+            return '#' + (0x1000000 + (R < 16 ? 0 : '') * R * 0x10000 + (G < 16 ? 0 : '') * G * 0x100 + (B < 16 ? 0 : '') * B).toString(16).slice(1);
+        }
+
+        // ============ Particle Animation ============
+        function initializeParticles() {
+            const canvas = document.getElementById('particle-canvas');
             const ctx = canvas.getContext('2d');
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            
-            let particles = [];
-            let lightning = [];
-            
-            class Particle {
-                constructor() {
-                    this.x = Math.random() * canvas.width;
-                    this.y = Math.random() * canvas.height;
-                    this.size = Math.random() * 2 + 0.5;
-                    this.vx = (Math.random() - 0.5) * 0.5;
-                    this.vy = (Math.random() - 0.5) * 0.5;
-                    this.opacity = Math.random() * 0.5 + 0.1;
-                }
-                
-                update() {
-                    this.x += this.vx;
-                    this.y += this.vy;
-                    if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
-                    if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
-                }
-                
-                draw() {
-                    ctx.fillStyle = `rgba(167, 139, 250, ${this.opacity})`;
-                    ctx.fillRect(this.x, this.y, this.size, this.size);
-                }
-            }
-            
-            for (let i = 0; i < 15; i++) particles.push(new Particle());
-            
-            function animate() {
-                ctx.fillStyle = 'rgba(10, 10, 10, 0.1)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-                
-                particles.forEach(p => {
-                    p.update();
-                    p.draw();
-                });
-                
-                if (Math.random() < 0.02) {
-                    ctx.strokeStyle = 'rgba(167, 139, 250, 0.3)';
-                    ctx.lineWidth = 1;
-                    const startX = Math.random() * canvas.width;
-                    const startY = Math.random() * canvas.height;
-                    ctx.beginPath();
-                    ctx.moveTo(startX, startY);
-                    ctx.lineTo(startX + (Math.random() - 0.5) * 200, startY + Math.random() * 200);
-                    ctx.stroke();
-                }
-                
-                requestAnimationFrame(animate);
-            }
-            animate();
-            
-            window.addEventListener('resize', () => {
+            const particles = [];
+            const particleCount = 15;
+
+            function resizeCanvas() {
                 canvas.width = window.innerWidth;
                 canvas.height = window.innerHeight;
-            });
-        }
-        
-        // Theme Management
-        function initThemeSelector() {
-            const selector = document.getElementById('themeSelector');
-            themes.forEach((theme, idx) => {
-                const dot = document.createElement('div');
-                dot.className = 'theme-color' + (idx === 0 ? ' active' : '');
-                dot.style.backgroundColor = theme.primary;
-                dot.onclick = () => setTheme(idx);
-                selector.appendChild(dot);
-            });
-        }
-        
-        function setTheme(idx) {
-            currentTheme = themes[idx];
-            document.documentElement.style.setProperty('--primary-color', currentTheme.primary);
-            document.documentElement.style.setProperty('--primary-dark', currentTheme.dark);
-            document.documentElement.style.setProperty('--primary-light', currentTheme.light);
-            document.querySelectorAll('.theme-color').forEach((dot, i) => {
-                dot.classList.toggle('active', i === idx);
-            });
-            localStorage.setItem('selectedTheme', idx);
-        }
-        
-        // Auth - FIXED: 30 day expiration instead of 24 hours
-        function checkAuthentication() {
-            const storedToken = localStorage.getItem('authToken');
-            const tokenTimestamp = localStorage.getItem('authTokenTimestamp');
-            const now = Date.now();
-            const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
-            
-            if (storedToken && tokenTimestamp && (now - parseInt(tokenTimestamp) < thirtyDaysInMs)) {
-                authToken = storedToken;
-                document.getElementById('passwordModal').style.display = 'none';
-                document.getElementById('fileExplorer').style.display = 'flex';
-                const theme = parseInt(localStorage.getItem('selectedTheme') || '0');
-                setTheme(theme);
-                loadFiles();
-            } else {
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('authTokenTimestamp');
-                authToken = null;
-                document.getElementById('passwordModal').style.display = 'flex';
-                document.getElementById('fileExplorer').style.display = 'none';
             }
+
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            for (let i = 0; i < particleCount; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    size: Math.random() * 2 + 1,
+                    opacity: Math.random() * 0.3 + 0.1
+                });
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = COLORS[currentTheme].hex;
+
+                particles.forEach((p, i) => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.opacity += (Math.random() - 0.5) * 0.02;
+                    p.opacity = Math.max(0.1, Math.min(0.4, p.opacity));
+
+                    if (p.x < 0) p.x = canvas.width;
+                    if (p.x > canvas.width) p.x = 0;
+                    if (p.y < 0) p.y = canvas.height;
+                    if (p.y > canvas.height) p.y = 0;
+
+                    ctx.globalAlpha = p.opacity;
+                    ctx.fillRect(p.x, p.y, p.size, p.size);
+
+                    // Lightning effect
+                    if (Math.random() < 0.005) {
+                        drawLightning(ctx, Math.random() * canvas.width, 0, Math.random() * canvas.width, Math.random() * 100);
+                    }
+                });
+
+                ctx.globalAlpha = 1;
+                requestAnimationFrame(animate);
+            }
+
+            animate();
         }
-        
+
+        function drawLightning(ctx, fromX, fromY, toX, toY) {
+            ctx.strokeStyle = COLORS[currentTheme].hex;
+            ctx.globalAlpha = 0.5;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(fromX, fromY);
+            let x = fromX, y = fromY;
+            while (y < toY) {
+                x += (Math.random() - 0.5) * 20;
+                y += Math.random() * 20 + 10;
+                ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+        }
+
+        // ============ Authentication ============
+        function checkAuthentication() {
+            const token = localStorage.getItem('authToken');
+            const timestamp = localStorage.getItem('authTokenTime');
+
+            if (token && timestamp) {
+                const elapsed = Date.now() - parseInt(timestamp);
+                if (elapsed < TOKEN_DURATION) {
+                    authToken = token;
+                    document.getElementById('password-modal').classList.remove('active');
+                    loadFiles();
+                    return;
+                }
+            }
+
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('authTokenTime');
+            authToken = null;
+            document.getElementById('password-modal').classList.add('active');
+        }
+
         async function checkPassword() {
-            const password = document.getElementById('password').value.trim();
+            const password = document.getElementById('password-input').value;
+            const errorEl = document.getElementById('password-error');
+            errorEl.textContent = '';
+
             if (!password) {
-                document.getElementById('errorMessage').textContent = 'Please enter a password';
+                errorEl.textContent = 'Please enter a password';
                 return;
             }
-            
-            if (Date.now() < lockoutEndTime) return;
-            
+
             try {
                 const res = await fetch('/check-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ password })
                 });
-                
-                const data = await res.json();
-                
+
                 if (res.ok) {
-                    authToken = 'token_' + Date.now();
+                    authToken = Math.random().toString(36).substring(2, 15);
                     localStorage.setItem('authToken', authToken);
-                    localStorage.setItem('authTokenTimestamp', Date.now().toString());
-                    document.getElementById('passwordModal').style.display = 'none';
-                    document.getElementById('fileExplorer').style.display = 'flex';
-                    document.getElementById('password').value = '';
-                    loginAttempts = 0;
+                    localStorage.setItem('authTokenTime', Date.now().toString());
+                    document.getElementById('password-modal').classList.remove('active');
+                    document.getElementById('password-input').value = '';
                     loadFiles();
                 } else {
-                    loginAttempts++;
-                    if (loginAttempts >= maxLoginAttempts) {
-                        lockoutEndTime = Date.now() + 30000;
-                        document.getElementById('errorMessage').textContent = 'Too many attempts. Try again in 30 seconds.';
-                        document.getElementById('password').disabled = true;
-                        setTimeout(() => {
-                            document.getElementById('password').disabled = false;
-                            loginAttempts = 0;
-                        }, 30000);
-                    } else {
-                        document.getElementById('errorMessage').textContent = 'Invalid password';
-                        document.getElementById('attemptsLeft').textContent = `${maxLoginAttempts - loginAttempts} attempts left`;
-                    }
+                    errorEl.textContent = 'Invalid password';
                 }
             } catch (err) {
-                document.getElementById('errorMessage').textContent = 'Authentication error';
+                errorEl.textContent = 'Authentication error';
             }
         }
-        
-        function loadFiles(path = '') {
+
+        function handlePasswordKeypress(e) {
+            if (e.key === 'Enter') checkPassword();
+        }
+
+        function logoutUser() {
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('authTokenTime');
+            authToken = null;
+            document.getElementById('password-modal').classList.add('active');
+            document.getElementById('file-explorer').classList.remove('hidden');
+            document.getElementById('editor-view').classList.add('hidden');
+        }
+
+        // ============ File Operations ============
+        async function loadFiles(path = '') {
             if (!authToken) return;
+
             currentPath = path;
-            document.getElementById('pathIndicator').innerHTML = `Location: <span>${path || '/'}</span>`;
-            
-            const url = path ? `${serverUrl}/dir/${encodeURIComponent(path)}` : `${serverUrl}/files`;
-            
-            fetch(url)
-                .then(r => r.json())
-                .then(data => {
-                    const list = document.getElementById('fileList');
-                    list.innerHTML = '';
-                    
-                    if (path) {
-                        const back = document.createElement('li');
-                        back.innerHTML = `<div class="file-name folder">📁 Go Back</div>
-                            <div class="file-actions"><button class="action-btn" onclick="loadFiles('')">Back</button></div>`;
-                        back.onclick = () => loadFiles(path.split('/').slice(0, -1).join('/'));
-                        list.appendChild(back);
-                    }
-                    
-                    data.forEach(item => {
-                        const li = document.createElement('li');
-                        const isDir = item.is_directory;
-                        const icon = isDir ? '📁' : '📄';
-                        const classname = isDir ? 'folder' : 'file';
-                        
-                        li.innerHTML = `<div class="file-name ${classname}">${icon} ${item.name}</div>
-                            <div class="file-actions">
-                                <button class="action-btn" onclick="renameFile('${item.name}')">Rename</button>
-                                <button class="action-btn" onclick="downloadFile('${item.name}')" ${isDir ? 'disabled' : ''}>Download</button>
-                                <button class="action-btn" onclick="deleteFile('${item.name}')">Delete</button>
-                            </div>`;
-                        
-                        li.querySelector('.file-name').onclick = () => {
-                            if (isDir) loadFiles(path ? `${path}/${item.name}` : item.name);
-                            else openFile(item.name);
-                        };
-                        
-                        list.appendChild(li);
-                    });
-                })
-                .catch(err => {
-                    checkAuthentication();
+            selectedFiles.clear();
+            updatePathIndicator();
+            updateBulkActionsVisibility();
+
+            try {
+                const url = path ? `${serverUrl}/dir/${encodeURIComponent(path)}` : `${serverUrl}/files`;
+                const res = await fetch(url);
+                const data = await res.json();
+
+                const fileList = document.getElementById('file-list');
+                fileList.innerHTML = '';
+
+                if (path) {
+                    addFileItem(fileList, '..', true, () => goBack());
+                }
+
+                data.forEach(item => {
+                    addFileItem(fileList, item.name, item.is_directory, 
+                        () => item.is_directory ? openFolder(item.name) : openFile(item.name),
+                        item.is_directory);
                 });
+
+                document.getElementById('select-all').checked = false;
+            } catch (err) {
+                console.error('Error loading files:', err);
+            }
         }
-        
-        function openFile(filename) {
-            if (!authToken) return;
-            const filepath = currentPath ? `${currentPath}/${filename}` : filename;
-            
-            fetch(`${serverUrl}/files/${encodeURIComponent(filepath)}`)
-                .then(r => r.json())
-                .then(data => {
-                    if (data.error) {
-                        alert('Error: ' + data.error);
-                        return;
-                    }
-                    
-                    document.getElementById('fileExplorer').style.display = 'none';
-                    document.getElementById('editorFullscreen').style.display = 'flex';
-                    document.getElementById('editorTitle').textContent = 'Editing: ' + filepath;
-                    document.getElementById('fileContent').value = data.content;
-                    updateLineNumbers();
-                })
-                .catch(err => alert('Error opening file: ' + err));
+
+        function addFileItem(container, name, isFolder, onClick, isDir = false) {
+            const item = document.createElement('div');
+            item.className = 'file-item';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.className = 'file-checkbox';
+            checkbox.onchange = (e) => toggleFileSelection(e, name);
+
+            const nameDiv = document.createElement('div');
+            nameDiv.className = `file-name ${isFolder ? 'folder' : ''}`;
+            nameDiv.innerHTML = `${isFolder ? '📁' : '📄'} <span>${name}</span>`;
+            nameDiv.style.flex = '1';
+            nameDiv.onclick = onClick;
+
+            item.appendChild(checkbox);
+            item.appendChild(nameDiv);
+
+            if (!isFolder && name !== '..') {
+                const actions = document.createElement('div');
+                actions.className = 'file-actions';
+                actions.innerHTML = `
+                    <button class="file-action-btn" onclick="renameFile('${name}')">Rename</button>
+                    <button class="file-action-btn" onclick="deleteFile('${name}')">Delete</button>
+                `;
+                item.appendChild(actions);
+            }
+
+            container.appendChild(item);
         }
-        
+
+        function toggleFileSelection(e, name) {
+            e.stopPropagation();
+            if (e.target.checked) {
+                selectedFiles.add(name);
+            } else {
+                selectedFiles.delete(name);
+            }
+            updateBulkActionsVisibility();
+        }
+
+        function toggleSelectAll() {
+            const isChecked = document.getElementById('select-all').checked;
+            selectedFiles.clear();
+
+            document.querySelectorAll('.file-list-content .file-checkbox').forEach(cb => {
+                cb.checked = isChecked;
+                if (isChecked && cb.parentElement.querySelector('span').textContent !== '..') {
+                    selectedFiles.add(cb.parentElement.querySelector('span').textContent);
+                }
+            });
+
+            updateBulkActionsVisibility();
+        }
+
+        function updateBulkActionsVisibility() {
+            const bulkActions = document.getElementById('bulk-actions');
+            const count = document.getElementById('selected-count');
+            count.textContent = selectedFiles.size;
+            bulkActions.classList.toggle('active', selectedFiles.size > 0);
+        }
+
+        function updatePathIndicator() {
+            document.getElementById('path-indicator').innerHTML = `Location: <span>${currentPath || '/'}</span>`;
+        }
+
+        function openFolder(name) {
+            const newPath = currentPath ? `${currentPath}/${name}` : name;
+            loadFiles(newPath);
+        }
+
+        function goBack() {
+            const newPath = currentPath.split('/').slice(0, -1).join('/');
+            loadFiles(newPath);
+        }
+
+        async function openFile(name) {
+            const filePath = currentPath ? `${currentPath}/${name}` : name;
+
+            try {
+                const res = await fetch(`${serverUrl}/files/${encodeURIComponent(filePath)}`);
+                const data = await res.json();
+
+                currentEditorFile = filePath;
+                document.getElementById('editor-path').textContent = `Editing: ${filePath}`;
+                document.getElementById('editor-textarea').value = data.content;
+                updateLineNumbers();
+
+                document.getElementById('file-explorer').classList.add('hidden');
+                document.getElementById('editor-view').classList.remove('hidden');
+            } catch (err) {
+                alert('Error opening file: ' + err);
+            }
+        }
+
+        // ============ Editor Functions ============
         function updateLineNumbers() {
-            const textarea = document.getElementById('fileContent');
-            const lineNumbers = document.getElementById('lineNumbers');
+            const textarea = document.getElementById('editor-textarea');
+            const lineNumbers = document.getElementById('line-numbers');
             const lines = textarea.value.split('\n').length;
-            let html = '';
-            for (let i = 1; i <= lines; i++) html += i + '<br>';
-            lineNumbers.innerHTML = html;
+
+            lineNumbers.innerHTML = '';
+            for (let i = 1; i <= lines; i++) {
+                const div = document.createElement('div');
+                div.className = 'line-number';
+                div.textContent = i;
+                lineNumbers.appendChild(div);
+            }
+
+            syncScroll();
         }
-        
-        document.getElementById('fileContent').addEventListener('input', updateLineNumbers);
-        document.getElementById('fileContent').addEventListener('scroll', function() {
-            document.getElementById('lineNumbers').scrollTop = this.scrollTop;
-        });
-        
-        function saveFile() {
-            if (!authToken) return;
-            const filepath = document.getElementById('editorTitle').textContent.replace('Editing: ', '');
-            const content = document.getElementById('fileContent').value;
-            
-            fetch(`${serverUrl}/edit`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ filename: filepath, content })
-            })
-            .then(r => r.json())
-            .then(data => {
+
+        function syncScroll() {
+            const textarea = document.getElementById('editor-textarea');
+            const lineNumbers = document.getElementById('line-numbers');
+            lineNumbers.scrollTop = textarea.scrollTop;
+        }
+
+        async function saveFile() {
+            const content = document.getElementById('editor-textarea').value;
+
+            try {
+                const res = await fetch(`${serverUrl}/edit`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: currentEditorFile, content })
+                });
+
+                const data = await res.json();
                 alert(data.message);
                 backToExplorer();
-            })
-            .catch(err => alert('Error saving: ' + err));
+            } catch (err) {
+                alert('Error saving file: ' + err);
+            }
         }
-        
+
+        function downloadFileContent() {
+            const content = document.getElementById('editor-textarea').value;
+            const filename = currentEditorFile.split('/').pop();
+            downloadContent(content, filename);
+        }
+
         function backToExplorer() {
-            document.getElementById('editorFullscreen').style.display = 'none';
-            document.getElementById('fileExplorer').style.display = 'flex';
+            document.getElementById('file-explorer').classList.remove('hidden');
+            document.getElementById('editor-view').classList.add('hidden');
             loadFiles(currentPath);
         }
-        
-        function downloadFile(filename) {
-            if (!authToken) return;
-            const filepath = currentPath ? `${currentPath}/${filename}` : filename;
-            const a = document.createElement('a');
-            a.href = `${serverUrl}/download/${encodeURIComponent(filepath)}`;
-            a.download = filename;
-            a.click();
-        }
-        
-        function createNewFile() {
+
+        // ============ File Management ============
+        async function createNewFile() {
             const name = prompt('Enter file name:');
             if (!name) return;
-            const path = currentPath ? `${currentPath}/${name}` : name;
-            
-            fetch(`${serverUrl}/create`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ filename: path, content: '' })
-            })
-            .then(r => r.json())
-            .then(data => {
+
+            try {
+                const path = currentPath ? `${currentPath}/${name}` : name;
+                const res = await fetch(`${serverUrl}/create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: path, content: '' })
+                });
+
+                const data = await res.json();
                 alert(data.message);
                 loadFiles(currentPath);
-            })
-            .catch(err => alert('Error: ' + err));
+            } catch (err) {
+                alert('Error: ' + err);
+            }
         }
-        
-        function createNewFolder() {
+
+        async function createNewFolder() {
             const name = prompt('Enter folder name:');
             if (!name) return;
-            const path = currentPath ? `${currentPath}/${name}` : name;
-            
-            fetch(`${serverUrl}/mkdir`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ dirname: path })
-            })
-            .then(r => r.json())
-            .then(data => {
+
+            try {
+                const path = currentPath ? `${currentPath}/${name}` : name;
+                const res = await fetch(`${serverUrl}/mkdir`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ dirname: path })
+                });
+
+                const data = await res.json();
                 alert(data.message);
                 loadFiles(currentPath);
-            })
-            .catch(err => alert('Error: ' + err));
+            } catch (err) {
+                alert('Error: ' + err);
+            }
         }
-        
-        function renameFile(oldName) {
-            const newName = prompt('Rename to:', oldName);
+
+        async function renameFile(oldName) {
+            const newName = prompt('New name:', oldName);
             if (!newName || newName === oldName) return;
-            
-            const oldPath = currentPath ? `${currentPath}/${oldName}` : oldName;
-            const newPath = currentPath ? `${currentPath}/${newName}` : newName;
-            
-            fetch(`${serverUrl}/rename`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ old_name: oldPath, new_name: newPath })
-            })
-            .then(r => r.json())
-            .then(data => {
+
+            try {
+                const oldPath = currentPath ? `${currentPath}/${oldName}` : oldName;
+                const newPath = currentPath ? `${currentPath}/${newName}` : newName;
+
+                const res = await fetch(`${serverUrl}/rename`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ old_name: oldPath, new_name: newPath })
+                });
+
+                const data = await res.json();
                 alert(data.message);
                 loadFiles(currentPath);
-            })
-            .catch(err => alert('Error: ' + err));
+            } catch (err) {
+                alert('Error: ' + err);
+            }
         }
-        
-        function deleteFile(filename) {
-            if (!confirm(`Delete "${filename}"?`)) return;
-            const path = currentPath ? `${currentPath}/${filename}` : filename;
-            
-            fetch(`${serverUrl}/delete`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ filename: path })
-            })
-            .then(r => r.json())
-            .then(() => loadFiles(currentPath))
-            .catch(err => alert('Error: ' + err));
+
+        async function deleteFile(name) {
+            if (!confirm(`Delete "${name}"?`)) return;
+
+            try {
+                const path = currentPath ? `${currentPath}/${name}` : name;
+                const res = await fetch(`${serverUrl}/delete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: path })
+                });
+
+                const data = await res.json();
+                alert(data.message);
+                loadFiles(currentPath);
+            } catch (err) {
+                alert('Error: ' + err);
+            }
         }
-        
-        function uploadFile() {
-            const file = document.getElementById('fileInput').files[0];
-            if (!file) {
-                alert('Please select a file');
+
+        async function deleteSelectedFiles() {
+            if (!confirm(`Delete ${selectedFiles.size} files?`)) return;
+
+            try {
+                for (const name of selectedFiles) {
+                    const path = currentPath ? `${currentPath}/${name}` : name;
+                    await fetch(`${serverUrl}/delete`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ filename: path })
+                    });
+                }
+
+                alert(`Deleted ${selectedFiles.size} files`);
+                loadFiles(currentPath);
+            } catch (err) {
+                alert('Error: ' + err);
+            }
+        }
+
+        async function moveSelectedFiles() {
+            const dest = document.getElementById('move-path').value.trim();
+            if (!dest) {
+                alert('Enter destination path');
                 return;
             }
-            
-            const formData = new FormData();
-            formData.append('file', file);
-            formData.append('path', currentPath);
-            
-            fetch(`${serverUrl}/upload`, {
-                method: 'POST',
-                body: formData
-            })
-            .then(r => r.json())
-            .then(data => {
-                alert(data.message);
-                document.getElementById('fileInput').value = '';
+
+            try {
+                for (const name of selectedFiles) {
+                    const oldPath = currentPath ? `${currentPath}/${name}` : name;
+                    const newPath = dest.endsWith('/') ? `${dest}${name}` : `${dest}/${name}`;
+
+                    await fetch(`${serverUrl}/rename`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ old_name: oldPath, new_name: newPath })
+                    });
+                }
+
+                alert(`Moved ${selectedFiles.size} files`);
+                document.getElementById('move-path').value = '';
                 loadFiles(currentPath);
-            })
-            .catch(err => alert('Error: ' + err));
-        }
-        
-        function logout() {
-            if (confirm('Logout?')) {
-                localStorage.removeItem('authToken');
-                localStorage.removeItem('authTokenTimestamp');
-                authToken = null;
-                checkAuthentication();
+            } catch (err) {
+                alert('Error: ' + err);
             }
+        }
+
+        async function downloadFile() {
+            if (selectedFiles.size === 0) {
+                alert('Select a file to download');
+                return;
+            }
+
+            const filename = Array.from(selectedFiles)[0];
+            const path = currentPath ? `${currentPath}/${filename}` : filename;
+
+            try {
+                const res = await fetch(`${serverUrl}/files/${encodeURIComponent(path)}`);
+                const data = await res.json();
+                downloadContent(data.content, filename);
+            } catch (err) {
+                alert('Error: ' + err);
+            }
+        }
+
+        function downloadContent(content, filename) {
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // ============ Upload Handling ============
+        function showUploadModal() {
+            uploadedFile = null;
+            document.getElementById('upload-modal').classList.add('active');
+        }
+
+        function closeUploadModal() {
+            document.getElementById('upload-modal').classList.remove('active');
+            uploadedFile = null;
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            document.getElementById('upload-zone').classList.add('drag-over');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            document.getElementById('upload-zone').classList.remove('drag-over');
+            if (e.dataTransfer.files.length) {
+                uploadedFile = e.dataTransfer.files[0];
+                updateUploadUI();
+            }
+        }
+
+        function updateUploadUI() {
+            if (uploadedFile) {
+                document.getElementById('file-selected').style.display = 'block';
+                document.getElementById('selected-filename').value = uploadedFile.name;
+            }
+        }
+
+        async function uploadFile() {
+            if (!uploadedFile) {
+                alert('Select a file first');
+                return;
+            }
+
+            try {
+                const formData = new FormData();
+                formData.append('file', uploadedFile);
+                formData.append('path', currentPath);
+
+                const res = await fetch(`${serverUrl}/upload`, { method: 'POST', body: formData });
+                const data = await res.json();
+
+                alert(data.message);
+                closeUploadModal();
+                loadFiles(currentPath);
+            } catch (err) {
+                alert('Upload error: ' + err);
+            }
+        }
+
+        // ============ Event Listeners ============
+        function setupEventListeners() {
+            document.getElementById('upload-zone').addEventListener('click', () => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.onchange = (e) => {
+                    uploadedFile = e.target.files[0];
+                    updateUploadUI();
+                };
+                input.click();
+            });
         }
     </script>
 </body>
