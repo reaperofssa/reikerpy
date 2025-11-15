@@ -94,12 +94,11 @@ def cleanup_zombie_processes():
 
 @socketio.on('command')
 def handle_command(data):
-    """Executes only whitelisted commands and ensures they persist."""
+    """Executes any command sent by the client."""
     full_command = data.get("command", "").strip()
-    base_command = full_command.split(" ")[0]
 
-    if base_command not in ALLOWED_COMMANDS:
-        socketio.emit("output", {"response": f"ERROR: Command '{base_command}' is not allowed."}, room=request.sid)
+    if not full_command:
+        socketio.emit("output", {"response": "ERROR: No command provided."}, room=request.sid)
         return
 
     with process_lock:
@@ -132,7 +131,6 @@ def handle_command(data):
             # Read stdout and stderr without blocking
             while process.poll() is None:
                 read_fds, _, _ = select.select([process.stdout, process.stderr], [], [], 0.1)
-
                 for stream in read_fds:
                     line = stream.readline().strip()
                     if line:
