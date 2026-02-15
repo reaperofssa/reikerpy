@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>FluxHost File Manager</title>
 <meta name="theme-color" content="#120812">
 <style>
@@ -28,12 +28,15 @@ body.night-mode {
   --text-primary:rgba(255,255,255,0.95); --text-sec:rgba(255,255,255,0.65); --text-dim:rgba(255,255,255,0.4);
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;max-width:100%;}
-html{overflow-x:hidden;width:100%;max-width:100vw;}
+html{overflow-x:hidden;width:100%;max-width:100vw;touch-action:manipulation;}
 body{
   font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   background:var(--dusk-deep);color:var(--text-primary);
   min-height:100vh;-webkit-font-smoothing:antialiased;transition:background 0.4s;
   overflow-x:hidden;width:100%;max-width:100vw;position:relative;
+  touch-action:manipulation;
+  -webkit-user-select:none;
+  -webkit-tap-highlight-color:transparent;
 }
 .bg-base{
   position:fixed;inset:0;z-index:0;
@@ -103,10 +106,13 @@ body.night-mode .glass{
 }
 .file-item:hover{background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.1);}
 .file-item.selected{background:rgba(155,89,182,0.09);border-color:rgba(155,89,182,0.28);}
+.file-item.folder-item{border-left:3px solid var(--purple-accent);}
+.file-item.folder-item:hover{background:rgba(155,89,182,0.08);}
 .file-checkbox{width:16px;height:16px;flex-shrink:0;}
-.file-icon{width:16px;height:16px;flex-shrink:0;color:var(--purple-accent);}
-.file-icon.file{color:var(--text-sec);}
+.file-icon{width:18px;height:18px;flex-shrink:0;color:var(--purple-accent);}
+.file-icon.file{color:var(--text-sec);width:16px;height:16px;}
 .file-name{flex:1;font-size:12px;color:var(--text-primary);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.file-name.folder-name{color:var(--purple-accent);font-weight:500;}
 .file-size{font-size:10px;color:var(--text-dim);flex-shrink:0;}
 .file-actions{display:flex;gap:4px;flex-shrink:0;}
 .file-action-btn{width:24px;height:24px;border-radius:6px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.18s;}
@@ -135,7 +141,7 @@ body.night-mode .glass{
 
 .editor-body{flex:1;display:flex;overflow:hidden;}
 .line-numbers{width:50px;background:rgba(0,0,0,0.3);border-right:1px solid rgba(255,255,255,0.08);padding:12px 8px;font-family:'Courier New',Courier,monospace;font-size:12px;color:var(--text-dim);text-align:right;user-select:none;overflow:hidden;line-height:1.6;}
-.editor-textarea{flex:1;background:rgba(0,0,0,0.2);border:none;outline:none;padding:12px;font-family:'Courier New',Courier,monospace;font-size:12px;color:var(--text-primary);resize:none;line-height:1.6;overflow-y:auto;}
+.editor-textarea{flex:1;background:rgba(0,0,0,0.2);border:none;outline:none;padding:12px;font-family:'Courier New',Courier,monospace;font-size:12px;color:var(--text-primary);resize:none;line-height:1.6;overflow-y:auto;-webkit-user-select:text;user-select:text;}
 
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);z-index:2000;display:none;align-items:center;justify-content:center;padding:20px;}
 .modal-overlay.show{display:flex;animation:fadeIn 0.2s ease;}
@@ -152,7 +158,7 @@ body.night-mode .glass{
 
 .form-group{margin-bottom:15px;}
 .form-group label{display:block;font-size:11px;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;}
-.form-group input{width:100%;padding:10px 12px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:var(--r-sm);color:var(--text-primary);font-size:13px;transition:border-color 0.2s;}
+.form-group input{width:100%;padding:10px 12px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:var(--r-sm);color:var(--text-primary);font-size:13px;transition:border-color 0.2s;-webkit-user-select:text;user-select:text;}
 .form-group input:focus{outline:none;border-color:rgba(155,89,182,0.4);}
 
 .login-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--purple-accent),var(--amber));border:none;border-radius:var(--r-md);color:white;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;margin-top:10px;}
@@ -262,6 +268,10 @@ body.night-mode .glass{
       <button class="action-btn" onclick="zipSelected()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
         Zip
+      </button>
+      <button class="action-btn" onclick="window.location.href='/'">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Terminal
       </button>
     </div>
     
@@ -391,22 +401,26 @@ async function loadFiles(path = "") {
     }
     
     data.forEach(item => {
-      const icon = item.is_directory ? 
+      const isFolder = item.is_directory;
+      const folderClass = isFolder ? ' folder-item' : '';
+      const nameClass = isFolder ? ' folder-name' : '';
+      
+      const icon = isFolder ? 
         '<svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' :
         '<svg class="file-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
       
-      const size = item.is_directory ? '' : formatSize(item.size);
+      const size = isFolder ? '<span style="color:var(--purple-accent);font-size:10px;">Folder</span>' : formatSize(item.size);
       
       fileList.innerHTML += `
-        <div class="file-item" onclick="handleFileClick('${escapeHtml(item.name)}', ${item.is_directory})">
+        <div class="file-item${folderClass}" onclick="handleFileClick('${escapeHtml(item.name)}', ${isFolder})">
           <input type="checkbox" class="file-checkbox" onclick="event.stopPropagation();toggleSelect('${escapeHtml(item.name)}')">
           ${icon}
-          <div class="file-name">${escapeHtml(item.name)}</div>
+          <div class="file-name${nameClass}">${escapeHtml(item.name)}</div>
           <div class="file-size">${size}</div>
           <div class="file-actions">
-            <div class="file-action-btn" onclick="event.stopPropagation();downloadFile('${escapeHtml(item.name)}');" title="Download">
+            ${!isFolder ? `<div class="file-action-btn" onclick="event.stopPropagation();downloadFile('${escapeHtml(item.name)}');" title="Download">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            </div>
+            </div>` : ''}
             <div class="file-action-btn" onclick="event.stopPropagation();renameFile('${escapeHtml(item.name)}');" title="Rename">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </div>
@@ -469,9 +483,195 @@ async function openFile(name) {
     document.getElementById('editor-textarea').value = data.content;
     document.getElementById('editor-container').classList.add('show');
     updateLineNumbers();
+    applySyntaxHighlighting();
   } catch (error) {
     showToast('Error opening file');
   }
+}
+
+/* ============================================================ SYNTAX HIGHLIGHTING ============================================================ */
+function applySyntaxHighlighting() {
+  const textarea = document.getElementById('editor-textarea');
+  const fileName = currentEditingFile.toLowerCase();
+  
+  // Detect file type
+  let language = 'none';
+  if (fileName.endsWith('.py')) language = 'python';
+  else if (fileName.endsWith('.js') || fileName.endsWith('.jsx') || fileName.endsWith('.ts') || fileName.endsWith('.tsx')) language = 'javascript';
+  else if (fileName.endsWith('.json')) language = 'json';
+  else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) language = 'html';
+  else if (fileName.endsWith('.css')) language = 'css';
+  
+  // Add event listener for syntax highlighting as user types
+  textarea.removeEventListener('input', handleSyntaxInput);
+  textarea.addEventListener('input', handleSyntaxInput);
+  
+  // Initial highlight
+  highlightSyntax(textarea, language);
+}
+
+function handleSyntaxInput(e) {
+  const textarea = e.target;
+  const fileName = currentEditingFile.toLowerCase();
+  let language = 'none';
+  if (fileName.endsWith('.py')) language = 'python';
+  else if (fileName.endsWith('.js') || fileName.endsWith('.jsx') || fileName.endsWith('.ts') || fileName.endsWith('.tsx')) language = 'javascript';
+  
+  highlightSyntax(textarea, language);
+}
+
+function highlightSyntax(textarea, language) {
+  // Store cursor position
+  const cursorPos = textarea.selectionStart;
+  const scrollPos = textarea.scrollTop;
+  
+  let code = textarea.value;
+  
+  if (language === 'python') {
+    code = highlightPython(code);
+  } else if (language === 'javascript') {
+    code = highlightJavaScript(code);
+  }
+  
+  // Create or update overlay
+  let overlay = document.getElementById('syntax-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'syntax-overlay';
+    overlay.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: 50px;
+      right: 0;
+      bottom: 0;
+      padding: 12px;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 12px;
+      line-height: 1.6;
+      color: transparent;
+      pointer-events: none;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      overflow: hidden;
+      z-index: 1;
+    `;
+    textarea.parentElement.style.position = 'relative';
+    textarea.parentElement.insertBefore(overlay, textarea);
+    
+    // Make textarea transparent but keep caret visible
+    textarea.style.color = 'transparent';
+    textarea.style.caretColor = '#fff';
+    textarea.style.position = 'relative';
+    textarea.style.zIndex = '2';
+    textarea.style.background = 'transparent';
+  }
+  
+  overlay.innerHTML = code;
+  
+  // Restore cursor and scroll
+  textarea.setSelectionRange(cursorPos, cursorPos);
+  textarea.scrollTop = scrollPos;
+  overlay.scrollTop = scrollPos;
+  
+  // Sync scrolling
+  textarea.addEventListener('scroll', function() {
+    overlay.scrollTop = textarea.scrollTop;
+  });
+}
+
+function highlightPython(code) {
+  // Python keywords
+  const keywords = ['def', 'class', 'if', 'elif', 'else', 'for', 'while', 'try', 'except', 'finally', 
+                   'import', 'from', 'as', 'return', 'yield', 'lambda', 'with', 'pass', 'break', 
+                   'continue', 'and', 'or', 'not', 'in', 'is', 'None', 'True', 'False', 'async', 'await'];
+  
+  const builtins = ['print', 'input', 'len', 'range', 'str', 'int', 'float', 'list', 'dict', 'set', 
+                   'tuple', 'open', 'file', 'type', 'isinstance', 'super', 'self'];
+  
+  // Escape HTML
+  code = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  
+  // Highlight comments
+  code = code.replace(/(#.*$)/gm, '<span style="color:#5c6370;font-style:italic;">$1</span>');
+  
+  // Highlight strings
+  code = code.replace(/("[^"]*"|'[^']*'|'''[\s\S]*?'''|"""[\s\S]*?""")/g, '<span style="color:#98c379;">$1</span>');
+  
+  // Highlight numbers
+  code = code.replace(/\b(\d+\.?\d*)\b/g, '<span style="color:#d19a66;">$1</span>');
+  
+  // Highlight keywords
+  keywords.forEach(kw => {
+    const regex = new RegExp(`\\b${kw}\\b`, 'g');
+    code = code.replace(regex, `<span style="color:#c678dd;">${kw}</span>`);
+  });
+  
+  // Highlight builtins
+  builtins.forEach(fn => {
+    const regex = new RegExp(`\\b${fn}\\b`, 'g');
+    code = code.replace(regex, `<span style="color:#61afef;">${fn}</span>`);
+  });
+  
+  // Highlight function definitions
+  code = code.replace(/\b(def)\s+([a-zA-Z_][a-zA-Z0-9_]*)/g, 
+    '<span style="color:#c678dd;">$1</span> <span style="color:#e5c07b;">$2</span>');
+  
+  // Highlight class definitions
+  code = code.replace(/\b(class)\s+([a-zA-Z_][a-zA-Z0-9_]*)/g, 
+    '<span style="color:#c678dd;">$1</span> <span style="color:#e5c07b;">$2</span>');
+  
+  return code;
+}
+
+function highlightJavaScript(code) {
+  // JavaScript keywords
+  const keywords = ['const', 'let', 'var', 'function', 'if', 'else', 'for', 'while', 'do', 'switch', 
+                   'case', 'default', 'break', 'continue', 'return', 'try', 'catch', 'finally', 
+                   'throw', 'new', 'this', 'class', 'extends', 'import', 'export', 'from', 'as', 
+                   'async', 'await', 'yield', 'typeof', 'instanceof', 'delete', 'void', 'null', 
+                   'undefined', 'true', 'false'];
+  
+  const builtins = ['console', 'log', 'warn', 'error', 'document', 'window', 'setTimeout', 'setInterval',
+                   'parseInt', 'parseFloat', 'isNaN', 'Array', 'Object', 'String', 'Number', 'Boolean',
+                   'Math', 'Date', 'JSON', 'Promise', 'fetch'];
+  
+  // Escape HTML
+  code = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  
+  // Highlight comments
+  code = code.replace(/(\/\/.*$)/gm, '<span style="color:#5c6370;font-style:italic;">$1</span>');
+  code = code.replace(/(\/\*[\s\S]*?\*\/)/g, '<span style="color:#5c6370;font-style:italic;">$1</span>');
+  
+  // Highlight strings
+  code = code.replace(/("[^"]*"|'[^']*'|`[^`]*`)/g, '<span style="color:#98c379;">$1</span>');
+  
+  // Highlight numbers
+  code = code.replace(/\b(\d+\.?\d*)\b/g, '<span style="color:#d19a66;">$1</span>');
+  
+  // Highlight special keywords with different colors
+  code = code.replace(/\b(const)\b/g, '<span style="color:#61afef;">$1</span>');
+  code = code.replace(/\b(let)\b/g, '<span style="color:#e5c07b;">$1</span>');
+  code = code.replace(/\b(var)\b/g, '<span style="color:#d19a66;">$1</span>');
+  code = code.replace(/\b(function)\b/g, '<span style="color:#c678dd;">$1</span>');
+  
+  // Highlight other keywords
+  keywords.forEach(kw => {
+    if (!['const', 'let', 'var', 'function'].includes(kw)) {
+      const regex = new RegExp(`\\b${kw}\\b`, 'g');
+      code = code.replace(regex, `<span style="color:#c678dd;">${kw}</span>`);
+    }
+  });
+  
+  // Highlight builtins
+  builtins.forEach(fn => {
+    const regex = new RegExp(`\\b${fn}\\b`, 'g');
+    code = code.replace(regex, `<span style="color:#61afef;">${fn}</span>`);
+  });
+  
+  // Highlight function calls
+  code = code.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g, '<span style="color:#61afef;">$1</span>(');
+  
+  return code;
 }
 
 async function saveFile() {
@@ -491,6 +691,11 @@ async function saveFile() {
 }
 
 function closeEditor() {
+  const overlay = document.getElementById('syntax-overlay');
+  if (overlay) overlay.remove();
+  const textarea = document.getElementById('editor-textarea');
+  textarea.style.color = 'var(--text-primary)';
+  textarea.style.background = 'rgba(0,0,0,0.2)';
   document.getElementById('editor-container').classList.remove('show');
   loadFiles(currentPath);
 }
@@ -677,7 +882,32 @@ async function zipSelected() {
   const zipName = prompt('ZIP file name:', 'archive.zip');
   if (!zipName) return;
   
-  showToast('ZIP creation not yet implemented on backend');
+  // Ensure .zip extension
+  const finalZipName = zipName.endsWith('.zip') ? zipName : zipName + '.zip';
+  
+  try {
+    const res = await fetch(`${serverUrl}/create-zip`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        zip_name: finalZipName,
+        files: Array.from(selectedFiles),
+        path: currentPath
+      })
+    });
+    
+    const data = await res.json();
+    
+    if (res.ok) {
+      showToast(data.message);
+      selectedFiles.clear();
+      loadFiles(currentPath);
+    } else {
+      showToast(data.error || 'Error creating ZIP');
+    }
+  } catch (error) {
+    showToast('Error creating ZIP file');
+  }
 }
 
 /* ============================================================ EDITOR ============================================================ */
@@ -688,9 +918,9 @@ function updateLineNumbers() {
   
   let html = '';
   for (let i = 1; i <= lines; i++) {
-    html += i + '\n';
+    html += i + '<br>';
   }
-  lineNumbers.textContent = html;
+  lineNumbers.innerHTML = html;
   
   textarea.addEventListener('scroll', function() {
     lineNumbers.scrollTop = textarea.scrollTop;
