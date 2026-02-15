@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>FluxHost Terminal</title>
 <meta name="theme-color" content="#120812">
 <style>
@@ -28,12 +28,15 @@ body.night-mode {
   --text-primary:rgba(255,255,255,0.95); --text-sec:rgba(255,255,255,0.65); --text-dim:rgba(255,255,255,0.4);
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;max-width:100%;}
-html{overflow-x:hidden;width:100%;max-width:100vw;}
+html{overflow-x:hidden;width:100%;max-width:100vw;touch-action:manipulation;}
 body{
   font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   background:var(--dusk-deep);color:var(--text-primary);
   min-height:100vh;-webkit-font-smoothing:antialiased;transition:background 0.4s;
   overflow-x:hidden;width:100%;max-width:100vw;position:relative;
+  touch-action:manipulation;
+  -webkit-user-select:none;
+  -webkit-tap-highlight-color:transparent;
 }
 .bg-base{
   position:fixed;inset:0;z-index:0;
@@ -99,9 +102,9 @@ body.night-mode .glass{
 .conn-badge.disconnected{background:rgba(239,68,68,0.28);color:#fca5a5;}
 .conn-badge.reconnecting{background:rgba(245,158,11,0.28);color:#fcd34d;}
 
-.stats-row{padding:0 15px 12px;display:flex;gap:7px;flex-wrap:wrap;}
-.stat-item{flex:1;min-width:calc(50% - 4px);background:rgba(0,0,0,0.18);border:1px solid rgba(255,255,255,0.055);border-radius:var(--r-sm);padding:7px 8px;text-align:center;}
-.stat-item .s-label{font-size:8.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:1px;}
+.stats-row{padding:12px 15px;display:flex;gap:7px;flex-wrap:wrap;}
+.stat-item{flex:1;min-width:calc(50% - 4px);background:rgba(0,0,0,0.18);border:1px solid rgba(255,255,255,0.055);border-radius:var(--r-sm);padding:9px 8px;text-align:center;}
+.stat-item .s-label{font-size:8.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:2px;}
 .stat-item .s-value{font-size:12px;font-weight:600;color:var(--text-primary);}
 
 .terminal-wrap{padding:12px 15px;overflow:hidden;}
@@ -130,6 +133,8 @@ body.night-mode .glass{
   margin-bottom:10px;
   width:100%;
   box-sizing:border-box;
+  -webkit-user-select:text;
+  user-select:text;
 }
 .terminal-output *{
   max-width:100%;
@@ -174,7 +179,7 @@ body.night-mode .glass{
 .terminal-input-wrap{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.09);border-radius:var(--r-md);padding:8px 11px;transition:border-color 0.2s;}
 .terminal-input-wrap:focus-within{border-color:rgba(155,89,182,0.4);}
 .input-prompt{color:var(--amber);font-weight:700;font-size:14px;font-family:'Courier New',Courier,monospace;flex-shrink:0;}
-.terminal-input{flex:1;background:none;border:none;outline:none;color:var(--purple-accent);font-size:13px;font-family:'Courier New',Courier,monospace;font-weight:500;min-width:0;}
+.terminal-input{flex:1;background:none;border:none;outline:none;color:var(--purple-accent);font-size:13px;font-family:'Courier New',Courier,monospace;font-weight:500;min-width:0;-webkit-user-select:text;user-select:text;}
 .terminal-input::placeholder{color:var(--text-dim);}
 
 .btn-row{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap;}
@@ -188,7 +193,7 @@ body.night-mode .glass{
 .btn:disabled{opacity:0.4;cursor:not-allowed;}
 .btn:disabled:hover{transform:none;}
 
-.action-buttons{padding:0 15px 15px;display:flex;gap:7px;}
+.action-buttons{padding:12px 15px;display:flex;gap:7px;}
 .action-btn{flex:1;padding:10px;border-radius:var(--r-md);background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--text-sec);font-size:12px;font-weight:500;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:7px;}
 .action-btn:hover{background:rgba(255,255,255,0.08);transform:translateY(-1px);}
 
@@ -212,7 +217,7 @@ body.night-mode .glass{
 
 .form-group{margin-bottom:15px;}
 .form-group label{display:block;font-size:11px;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;}
-.form-group input{width:100%;padding:10px 12px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:var(--r-sm);color:var(--text-primary);font-size:13px;font-family:inherit;transition:border-color 0.2s;}
+.form-group input{width:100%;padding:10px 12px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:var(--r-sm);color:var(--text-primary);font-size:13px;font-family:inherit;transition:border-color 0.2s;-webkit-user-select:text;user-select:text;}
 .form-group input:focus{outline:none;border-color:rgba(155,89,182,0.4);}
 
 .login-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--purple-accent),var(--amber));border:none;border-radius:var(--r-md);color:white;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;margin-top:10px;}
@@ -292,15 +297,6 @@ body.night-mode .glass{
   </div>
 
   <div class="glass">
-    <div class="stats-row">
-      <div class="stat-item"><div class="s-label">CPU</div><div class="s-value" id="cpu-usage">0%</div></div>
-      <div class="stat-item"><div class="s-label">RAM</div><div class="s-value" id="ram-usage">0GB</div></div>
-      <div class="stat-item"><div class="s-label">Disk</div><div class="s-value" id="disk-usage">0GB</div></div>
-      <div class="stat-item"><div class="s-label">Uptime</div><div class="s-value" id="uptime">0m</div></div>
-    </div>
-  </div>
-
-  <div class="glass">
     <div class="terminal-wrap">
       <div class="terminal-header">
         <div class="terminal-title">Terminal Session</div>
@@ -328,6 +324,15 @@ body.night-mode .glass{
           Clear
         </button>
       </div>
+    </div>
+  </div>
+
+  <div class="glass">
+    <div class="stats-row">
+      <div class="stat-item"><div class="s-label">CPU</div><div class="s-value" id="cpu-usage">0%</div></div>
+      <div class="stat-item"><div class="s-label">RAM</div><div class="s-value" id="ram-usage">0GB</div></div>
+      <div class="stat-item"><div class="s-label">Disk</div><div class="s-value" id="disk-usage">0GB</div></div>
+      <div class="stat-item"><div class="s-label">Uptime</div><div class="s-value" id="uptime">0m</div></div>
     </div>
   </div>
 
