@@ -91,6 +91,65 @@ def get_command_history():
     # You can implement server-side storage if needed
     return jsonify({"history": []})
 
+# Add these routes to your Flask app (app.py)
+
+@app.route('/create-zip', methods=['POST'])
+def create_zip():
+    """Create a ZIP file from selected files/folders."""
+    data = request.json
+    zip_name = data.get("zip_name", "archive.zip")
+    files = data.get("files", [])
+    current_path = data.get("path", "")
+    
+    if not files:
+        return jsonify({"error": "No files selected"}), 400
+    
+    # Create ZIP file path
+    zip_path = os.path.join(HOME_DIR, current_path, zip_name) if current_path else os.path.join(HOME_DIR, zip_name)
+    zip_path = safe_path(os.path.join(current_path, zip_name)) if current_path else safe_path(zip_name)
+    
+    if not zip_path:
+        return jsonify({"error": "Invalid path"}), 400
+    
+    try:
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for file_name in files:
+                file_path = os.path.join(HOME_DIR, current_path, file_name) if current_path else os.path.join(HOME_DIR, file_name)
+                file_path = safe_path(os.path.join(current_path, file_name)) if current_path else safe_path(file_name)
+                
+                if not file_path or not os.path.exists(file_path):
+                    continue
+                
+                if os.path.isdir(file_path):
+                    # Add directory recursively
+                    for root, dirs, files_in_dir in os.walk(file_path):
+                        for file in files_in_dir:
+                            file_full_path = os.path.join(root, file)
+                            arcname = os.path.relpath(file_full_path, os.path.join(HOME_DIR, current_path) if current_path else HOME_DIR)
+                            zipf.write(file_full_path, arcname)
+                else:
+                    # Add single file
+                    arcname = file_name
+                    zipf.write(file_path, arcname)
+        
+        return jsonify({"message": f"Created {zip_name} with {len(files)} items"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/download/<path:filepath>', methods=['GET'])
+def download_file(filepath):
+    """Download a file."""
+    file_path = safe_path(filepath)
+    
+    if not file_path or not os.path.exists(file_path) or os.path.isdir(file_path):
+        return jsonify({"error": "File not found"}), 404
+    
+    try:
+        return send_file(file_path, as_attachment=True, download_name=os.path.basename(filepath))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 # Add system info endpoint
 @app.route('/system-info', methods=['GET'])
 def system_info():
