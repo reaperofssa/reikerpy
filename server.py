@@ -6,6 +6,7 @@ import psutil
 from flask import Flask, send_from_directory, jsonify, request, send_file
 from flask_socketio import SocketIO, emit
 from flask_cors import CORS
+from datetime import datetime
 import time
 import signal
 import zipfile
@@ -71,6 +72,40 @@ def stats():
     """Return CPU and uptime stats."""
     return jsonify(get_cpu_and_uptime())
 
+
+# Add this route for session info
+@app.route('/session-info', methods=['GET'])
+def session_info():
+    """Return current session information"""
+    return jsonify({
+        "user": "guest",
+        "session_id": request.sid if hasattr(request, 'sid') else "unknown",
+        "connected_at": datetime.now().isoformat(),
+        "server_version": "2.5.0"
+    })
+
+# Add command history endpoint
+@app.route('/command-history', methods=['GET'])
+def get_command_history():
+    """Return recent command history"""
+    # You can implement server-side storage if needed
+    return jsonify({"history": []})
+
+# Add system info endpoint
+@app.route('/system-info', methods=['GET'])
+def system_info():
+    """Return detailed system information"""
+    import platform
+    return jsonify({
+        "platform": platform.system(),
+        "platform_release": platform.release(),
+        "platform_version": platform.version(),
+        "architecture": platform.machine(),
+        "hostname": platform.node(),
+        "processor": platform.processor(),
+        "python_version": platform.python_version()
+    })
+    
 @app.route('/myfiles')
 def serve_file():
     """Serve the file.html as the base page."""
