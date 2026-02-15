@@ -1,893 +1,724 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ReikerNX Console</title>
-    
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&display=swap');
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FluxHost Terminal</title>
+<meta name="theme-color" content="#120812">
+<style>
+:root {
+  --dusk-deep:     #120812;
+  --dusk-mid:      #1e0e24;
+  --amber:         #c97b3a;
+  --amber-light:   #e8a85c;
+  --purple-accent: #9b59b6;
+  --purple-glow:   rgba(155,89,182,0.3);
+  --text-primary:  rgba(255,255,255,0.93);
+  --text-sec:      rgba(255,255,255,0.55);
+  --text-dim:      rgba(255,255,255,0.3);
+  --r-sm: 8px; --r-md: 12px; --r-lg: 16px;
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+}
+body.night-mode {
+  --dusk-deep:#000; --dusk-mid:#0a0a0a; --amber:#8b5a2b;
+  --amber-light:#a0703a; --purple-accent:#6b3d7d;
+  --purple-glow:rgba(107,61,125,0.2);
+  --text-primary:rgba(255,255,255,0.95); --text-sec:rgba(255,255,255,0.65); --text-dim:rgba(255,255,255,0.4);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;max-width:100%;}
+html{overflow-x:hidden;width:100%;max-width:100vw;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:var(--dusk-deep);color:var(--text-primary);
+  min-height:100vh;-webkit-font-smoothing:antialiased;transition:background 0.4s;
+  overflow-x:hidden;width:100%;max-width:100vw;position:relative;
+}
+.bg-base{
+  position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 130% 55% at 50% 0%,#2e1640 0%,transparent 65%),
+    radial-gradient(ellipse 70% 45% at 15% 75%,#1f1028 0%,transparent 55%),
+    radial-gradient(ellipse 85% 35% at 85% 55%,#3a1e45 0%,transparent 50%),
+    radial-gradient(ellipse 60% 30% at 50% 95%,#1a0c1e 0%,transparent 60%),
+    linear-gradient(180deg,#1c0e25 0%,#130a18 35%,#0d0610 100%);
+  transform:translate3d(0,0,0);
+  -webkit-transform:translate3d(0,0,0);
+  will-change:transform;
+}
+body.night-mode .bg-base{background:#000;}
+.bg-glow{
+  position:fixed;inset:0;z-index:1;pointer-events:none;
+  background:
+    radial-gradient(ellipse 65% 22% at 50% 28%,rgba(201,123,58,0.1) 0%,transparent 70%),
+    radial-gradient(ellipse 45% 18% at 25% 60%,rgba(155,89,182,0.07) 0%,transparent 55%);
+  transform:translateZ(0);backface-visibility:hidden;-webkit-backface-visibility:hidden;transition:opacity 0.4s;
+}
+body.night-mode .bg-glow{opacity:0.3;}
 
-        :root {
-            --primary: #00ff9d;
-            --primary-dark: #00cc7d;
-            --primary-light: #7dffcb;
-            --bg-dark: #0f0f0f;
-            --bg-darker: #080808;
-            --bg-light: #1a1a1a;
-            --text: #e0e0e0;
-            --danger: #ff3a3a;
-            --warning: #ffcc00;
-        }
+.app{position:relative;z-index:10;width:92%;max-width:900px;margin:0 auto;padding:16px 0 40px;display:flex;flex-direction:column;gap:10px;}
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'JetBrains Mono', monospace;
-        }
+.glass{
+  background:linear-gradient(180deg,rgba(255,255,255,0.11) 0%,rgba(255,255,255,0.045) 18%,rgba(255,255,255,0.035) 80%,rgba(255,255,255,0.06) 100%);
+  backdrop-filter:blur(32px) saturate(1.3);-webkit-backdrop-filter:blur(32px) saturate(1.3);
+  border:1px solid rgba(255,255,255,0.13);border-top-color:rgba(255,255,255,0.22);
+  box-shadow:0 1px 0 inset rgba(255,255,255,0.12),0 6px 28px rgba(0,0,0,0.3),0 1px 2px rgba(0,0,0,0.2);
+  border-radius:var(--r-lg);
+  transform:translate3d(0,0,0);
+  -webkit-transform:translate3d(0,0,0);
+  transition:background 0.4s,border-color 0.4s;
+  overflow:hidden;
+}
+body.night-mode .glass{
+  background:linear-gradient(180deg,rgba(255,255,255,0.06) 0%,rgba(255,255,255,0.02) 18%,rgba(255,255,255,0.015) 80%,rgba(255,255,255,0.03) 100%);
+  border:1px solid rgba(255,255,255,0.08);border-top-color:rgba(255,255,255,0.12);
+}
 
-        body {
-           background: var(--bg-darker);
-           color: var(--text);
-           display: flex;
-           justify-content: center;
-           align-items: center;
-           min-height: 100vh;
-           padding: 15px;
-           overflow-x: hidden;
-        }
+.header{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;}
+.logo{display:flex;align-items:center;gap:8px;cursor:pointer;}
+.logo-svg-wrap{width:28px;height:28px;background:linear-gradient(135deg,var(--purple-accent),#c97b3a);border-radius:7px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px var(--purple-glow);}
+.logo-svg-wrap svg{width:16px;height:16px;}
+.logo-text{font-size:16px;font-weight:600;letter-spacing:-0.2px;}
+.logo-text .b{color:var(--purple-accent);}
+.header-right{display:flex;align-items:center;gap:8px;}
+.live-pill{display:flex;align-items:center;gap:5px;background:rgba(155,89,182,0.22);border:1px solid rgba(155,89,182,0.35);padding:4px 10px;border-radius:18px;font-size:10px;font-weight:700;letter-spacing:0.9px;color:var(--purple-accent);}
+.live-dot{width:6px;height:6px;background:var(--purple-accent);border-radius:50%;animation:livePulse 2s infinite;}
+@keyframes livePulse{0%,100%{opacity:1}50%{opacity:0.25}}
+.user-pill{display:flex;align-items:center;gap:6px;background:rgba(155,89,182,0.15);border:1px solid rgba(155,89,182,0.28);padding:4px 10px 4px 5px;border-radius:18px;cursor:pointer;transition:background 0.2s;}
+.user-pill:hover{background:rgba(155,89,182,0.25);}
+.user-avatar{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--purple-accent),var(--amber));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:white;}
+.user-name{font-size:10px;font-weight:700;letter-spacing:0.5px;color:var(--purple-accent);}
+.theme-toggle{background:rgba(255,255,255,0.09);border:1px solid rgba(255,255,255,0.13);color:var(--text-sec);width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background 0.2s,transform 0.15s;}
+.theme-toggle:hover{background:rgba(255,255,255,0.18);transform:scale(1.05);}
+.theme-toggle svg{width:16px;height:16px;fill:currentColor;}
 
-        .container {
-            background: var(--bg-dark);
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0, 255, 157, 0.2);
-            width: 100%;
-            max-width: 900px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            border: 1px solid var(--primary-dark);
-            position: relative;
-            text-align: center;
-        }
+.conn-badge{position:fixed;top:14px;right:16px;z-index:100;padding:4px 10px;border-radius:18px;font-size:10px;font-weight:600;letter-spacing:0.4px;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,0.1);opacity:1;transition:background 0.4s,color 0.4s,opacity 0.5s;pointer-events:none;transform:translateZ(0);}
+.conn-badge.hidden{opacity:0;}
+.conn-badge.connected{background:rgba(16,185,129,0.28);color:#6ee7b7;}
+.conn-badge.disconnected{background:rgba(239,68,68,0.28);color:#fca5a5;}
+.conn-badge.reconnecting{background:rgba(245,158,11,0.28);color:#fcd34d;}
 
-        h1 {
-            font-size: clamp(18px, 5vw, 24px);
-            margin-bottom: 10px;
-            text-transform: uppercase;
-            color: var(--primary);
-            letter-spacing: 1px;
-            font-weight: 600;
-            text-shadow: 0 0 8px rgba(0, 255, 157, 0.5);
-        }
+.stats-row{padding:0 15px 12px;display:flex;gap:7px;flex-wrap:wrap;}
+.stat-item{flex:1;min-width:calc(50% - 4px);background:rgba(0,0,0,0.18);border:1px solid rgba(255,255,255,0.055);border-radius:var(--r-sm);padding:7px 8px;text-align:center;}
+.stat-item .s-label{font-size:8.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:1px;}
+.stat-item .s-value{font-size:12px;font-weight:600;color:var(--text-primary);}
 
-        #user-id {
-            font-size: 14px;
-            color: var(--primary-light);
-            background: rgba(0, 255, 157, 0.1);
-            padding: 5px 10px;
-            border-radius: 4px;
-            display: inline-block;
-            margin-bottom: 10px;
-            border: 1px solid rgba(0, 255, 157, 0.3);
-        }
+.terminal-wrap{padding:12px 15px;overflow:hidden;}
+.terminal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.055);}
+.terminal-title{font-size:11px;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:0.7px;}
+.terminal-status{font-size:9px;padding:2px 7px;border-radius:5px;background:rgba(16,185,129,0.18);color:#6ee7b7;border:1px solid rgba(16,185,129,0.28);}
+.terminal-status.waiting{background:rgba(245,158,11,0.18);color:#fcd34d;border-color:rgba(245,158,11,0.28);}
 
-        .terminal {
-            background: var(--bg-darker);
-            border: 1px solid var(--primary-dark);
-            border-radius: 5px;
-            padding: 10px;
-            height: 400px;
-            width: 100%;
-            overflow-y: auto;
-            overflow-x: hidden;
-            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.5);
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            position: relative;
-        }        
+.terminal-output{
+  background:rgba(0,0,0,0.35);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:var(--r-md);
+  padding:12px;
+  min-height:400px;
+  max-height:500px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  font-family:'Courier New',Courier,monospace;
+  font-size:12.5px;
+  line-height:1.6;
+  color:var(--text-primary);
+  white-space:pre-wrap;
+  word-wrap:break-word;
+  word-break:break-word;
+  overflow-wrap:anywhere;
+  margin-bottom:10px;
+  width:100%;
+  box-sizing:border-box;
+}
+.terminal-output *{
+  max-width:100%;
+  word-wrap:break-word;
+  word-break:break-word;
+  overflow-wrap:anywhere;
+  white-space:pre-wrap;
+}
+.terminal-output pre{
+  white-space:pre-wrap;
+  word-wrap:break-word;
+  word-break:break-word;
+  overflow-wrap:anywhere;
+  margin:0;
+  font-family:inherit;
+}
+.terminal-output::-webkit-scrollbar{width:3px;}
+.terminal-output::-webkit-scrollbar-track{background:transparent;}
+.terminal-output::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px;}
 
-        #terminal-output {
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--text);
-            text-align: left;
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 5px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            max-width: 100%;
-            font-size: 14px;
-            line-height: 1.5;
-        }
+.output-line{
+  margin-bottom:4px;
+  word-wrap:break-word;
+  word-break:break-word;
+  overflow-wrap:anywhere;
+  white-space:pre-wrap;
+  max-width:100%;
+}
+.command-line{
+  color:var(--purple-accent);
+  font-weight:600;
+  word-wrap:break-word;
+  word-break:break-word;
+  overflow-wrap:anywhere;
+  white-space:pre-wrap;
+}
+.command-line::before{content:'$ ';color:var(--amber);}
+.error-line{color:var(--danger);}
+.success-line{color:var(--success);}
+.warning-line{color:var(--warning);}
 
-        .input-container {
-            display: flex;
-            width: 100%;
-            gap: 5px;
-            margin-top: 5px;
-            flex-wrap: wrap;
-            position: relative;
-        }
+.terminal-input-wrap{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.09);border-radius:var(--r-md);padding:8px 11px;transition:border-color 0.2s;}
+.terminal-input-wrap:focus-within{border-color:rgba(155,89,182,0.4);}
+.input-prompt{color:var(--amber);font-weight:700;font-size:14px;font-family:'Courier New',Courier,monospace;flex-shrink:0;}
+.terminal-input{flex:1;background:none;border:none;outline:none;color:var(--purple-accent);font-size:13px;font-family:'Courier New',Courier,monospace;font-weight:500;min-width:0;}
+.terminal-input::placeholder{color:var(--text-dim);}
 
-        .input-container::before {
-            content: "$";
-            position: absolute;
-            left: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--primary);
-            font-weight: bold;
-            font-size: 16px;
-            z-index: 10;
-        }
+.btn-row{display:flex;gap:7px;margin-top:10px;flex-wrap:wrap;}
+.btn{flex:1;min-width:calc(50% - 4px);padding:8px 12px;border-radius:var(--r-md);font-size:11.5px;font-weight:600;cursor:pointer;transition:all 0.2s;border:1px solid;display:flex;align-items:center;justify-content:center;gap:6px;}
+.btn-primary{background:rgba(155,89,182,0.15);border-color:rgba(155,89,182,0.3);color:var(--purple-accent);}
+.btn-primary:hover{background:rgba(155,89,182,0.25);transform:translateY(-1px);}
+.btn-secondary{background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.1);color:var(--text-sec);}
+.btn-secondary:hover{background:rgba(255,255,255,0.08);}
+.btn-danger{background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#fca5a5;}
+.btn-danger:hover{background:rgba(239,68,68,0.25);}
+.btn:disabled{opacity:0.4;cursor:not-allowed;}
+.btn:disabled:hover{transform:none;}
 
-        #terminal-input {
-            flex-grow: 1;
-            padding: 10px 10px 10px 25px;
-            font-size: 14px;
-            color: var(--primary-light);
-            background: var(--bg-darker);
-            border: 1px solid var(--primary-dark);
-            border-radius: 4px;
-            outline: none;
-            box-shadow: 0 0 5px rgba(0, 255, 157, 0.2);
-            width: 100%;
-            max-width: 100%;
-            font-family: 'JetBrains Mono', monospace;
-        }
+.action-buttons{padding:0 15px 15px;display:flex;gap:7px;}
+.action-btn{flex:1;padding:10px;border-radius:var(--r-md);background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:var(--text-sec);font-size:12px;font-weight:500;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:7px;}
+.action-btn:hover{background:rgba(255,255,255,0.08);transform:translateY(-1px);}
 
-        #terminal-input:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 8px rgba(0, 255, 157, 0.4);
-        }
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;}
+.modal-overlay.show{display:flex;animation:fadeIn 0.2s ease;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
-        #send-btn {
-            background: var(--primary-dark);
-            color: var(--bg-darker);
-            border: none;
-            padding: 10px 15px;
-            font-size: 14px;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: all 0.2s ease;
-            font-weight: 600;
-            box-shadow: 0 0 10px rgba(0, 255, 157, 0.3);
-            width: auto;
-            margin-top: 5px;
-        }
+.modal{background:linear-gradient(180deg,rgba(255,255,255,0.11) 0%,rgba(255,255,255,0.045) 100%);backdrop-filter:blur(32px);-webkit-backdrop-filter:blur(32px);border:1px solid rgba(255,255,255,0.13);border-radius:var(--r-lg);width:90%;max-width:420px;box-shadow:0 8px 32px rgba(0,0,0,0.5);animation:slideUp 0.3s ease;display:flex;flex-direction:column;}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
 
-        @media (min-width: 768px) {
-            #send-btn {
-                margin-top: 0;
-                width: auto;
-            }
-        }
+.modal-header{padding:16px 18px;border-bottom:1px solid rgba(255,255,255,0.055);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-size:14px;font-weight:600;color:var(--text-primary);}
+.modal-close{width:28px;height:28px;border-radius:6px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background 0.2s;}
+.modal-close:hover{background:rgba(255,255,255,0.1);}
+.modal-close svg{width:14px;height:14px;fill:var(--text-sec);}
 
-        #send-btn:hover {
-            background: var(--primary);
-            box-shadow: 0 0 15px rgba(0, 255, 157, 0.5);
-            transform: scale(1.05);
-        }
+.modal-body{padding:18px;flex:1;overflow-y:auto;max-height:70vh;}
 
-        .server-stats {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 5px;
-            background: rgba(0, 255, 157, 0.05);
-            width: 100%;
-            border: 1px solid rgba(0, 255, 157, 0.2);
-        }
+.login-logo{text-align:center;margin-bottom:20px;color:var(--purple-accent);font-size:32px;font-weight:700;letter-spacing:-1px;}
+.login-logo .flux{background:linear-gradient(135deg,var(--purple-accent),var(--amber));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 
-        @media (min-width: 768px) {
-            .server-stats {
-                grid-template-columns: repeat(4, 1fr);
-            }
-        }
+.form-group{margin-bottom:15px;}
+.form-group label{display:block;font-size:11px;font-weight:600;color:var(--text-sec);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;}
+.form-group input{width:100%;padding:10px 12px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.1);border-radius:var(--r-sm);color:var(--text-primary);font-size:13px;font-family:inherit;transition:border-color 0.2s;}
+.form-group input:focus{outline:none;border-color:rgba(155,89,182,0.4);}
 
-        .server-stats div {
-            padding: 8px;
-            border-radius: 4px;
-            background: rgba(0, 255, 157, 0.1);
-            text-shadow: 0 0 5px rgba(0, 255, 157, 0.3);
-            border: 1px solid rgba(0, 255, 157, 0.15);
-            color: var(--primary-light);
-            font-weight: 500;
-        }
+.login-btn{width:100%;padding:12px;background:linear-gradient(135deg,var(--purple-accent),var(--amber));border:none;border-radius:var(--r-md);color:white;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.2s;margin-top:10px;}
+.login-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 4px 12px var(--purple-glow);}
+.login-btn:disabled{opacity:0.5;cursor:not-allowed;}
 
-        .server-stats span {
-            font-weight: 600;
-            color: var(--primary);
-        }
+.error-message{margin-top:12px;padding:10px;background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);border-radius:var(--r-sm);color:#fca5a5;font-size:12px;display:none;}
+.lockout-message{margin-top:12px;padding:10px;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);border-radius:var(--r-sm);color:#fcd34d;font-size:12px;display:none;}
 
-        .buttons {
-            margin-top: 15px;
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            gap: 10px;
-        }
+.login-footer{margin-top:20px;text-align:center;font-size:11px;color:var(--text-dim);}
 
-        @media (min-width: 768px) {
-            .buttons {
-                flex-direction: row;
-            }
-        }
+.spinner{width:16px;height:16px;border:2px solid rgba(255,255,255,0.2);border-top-color:white;border-radius:50%;animation:spin 0.6s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-        button {
-            background: var(--bg-light);
-            color: var(--primary);
-            border: 1px solid var(--primary-dark);
-            padding: 10px 15px;
-            font-size: 14px;
-            cursor: pointer;
-            border-radius: 4px;
-            transition: all 0.2s ease;
-            box-shadow: 0 0 10px rgba(0, 255, 157, 0.2);
-            width: 100%;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
+.toast{position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-100px);z-index:600;background:linear-gradient(135deg,rgba(155,89,182,0.95),rgba(201,123,58,0.95));backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.2);border-radius:12px;padding:12px 20px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,0.4);opacity:0;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1);pointer-events:none;max-width:90vw;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:all;}
+.toast-text{color:white;font-size:13px;font-weight:600;word-break:break-word;}
 
-        @media (min-width: 768px) {
-            button {
-                width: 48%;
-            }
-        }
-
-        button:hover {
-            background: rgba(0, 255, 157, 0.1);
-            box-shadow: 0 0 15px rgba(0, 255, 157, 0.4);
-            transform: scale(1.03);
-        }
-
-        .command {
-            color: var(--primary);
-            font-weight: bold;
-            position: relative;
-        }
-
-        .command::before {
-            content: "$";
-            margin-right: 5px;
-            color: var(--primary);
-        }
-
-        /* Scrollbar styling */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--bg-darker);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--primary-dark);
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--primary);
-        }
-
-        /* Status indicator */
-        .container::before {
-            content: "ONLINE";
-            position: absolute;
-            top: 0;
-            right: 0;
-            background: var(--primary-dark);
-            color: var(--bg-darker);
-            padding: 2px 10px;
-            font-size: 12px;
-            border-bottom-left-radius: 4px;
-            font-weight: 600;
-        }
-
-        /* Terminal header */
-        #terminal-header {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            background: var(--bg-light);
-            padding: 5px 10px;
-            font-size: 12px;
-            color: var(--primary);
-            border-bottom: 1px solid var(--primary-dark);
-            text-align: center;
-            border-top-left-radius: 5px;
-            border-top-right-radius: 5px;
-        }
-
-        /* Blinking cursor effect */
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0; }
-        }
-
-        .cursor {
-            display: inline-block;
-            width: 8px;
-            height: 16px;
-            background-color: var(--primary);
-            animation: blink 1s infinite;
-            vertical-align: middle;
-            margin-left: 2px;
-        }
-
-        /* Login Modal */
-        .login-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.85);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            backdrop-filter: blur(5px);
-        }
-
-        .login-container {
-            background: var(--bg-dark);
-            padding: 25px;
-            border-radius: 8px;
-            width: 90%;
-            max-width: 400px;
-            border: 1px solid var(--primary-dark);
-            box-shadow: 0 0 30px rgba(0, 255, 157, 0.3);
-            text-align: center;
-        }
-
-        .login-header {
-            margin-bottom: 20px;
-        }
-
-        .login-header h2 {
-            color: var(--primary);
-            font-size: 24px;
-            margin-bottom: 10px;
-        }
-
-        .login-form {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-            text-align: left;
-        }
-
-        .form-group label {
-            color: var(--primary-light);
-            font-size: 14px;
-        }
-
-        .form-group input {
-            padding: 12px;
-            border-radius: 4px;
-            background: var(--bg-darker);
-            border: 1px solid var(--primary-dark);
-            color: var(--text);
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 10px rgba(0, 255, 157, 0.4);
-        }
-
-        .login-btn {
-            background: var(--primary-dark);
-            color: var(--bg-darker);
-            border: none;
-            padding: 12px;
-            font-size: 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s ease;
-            margin-top: 10px;
-        }
-
-        .login-btn:hover:not(:disabled) {
-            background: var(--primary);
-            transform: translateY(-2px);
-        }
-
-        .login-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .error-message {
-            color: var(--danger);
-            font-size: 14px;
-            margin-top: 10px;
-            padding: 8px;
-            background: rgba(255, 58, 58, 0.1);
-            border-radius: 4px;
-            border: 1px solid rgba(255, 58, 58, 0.3);
-        }
-
-        .lockout-message {
-            color: var(--warning);
-            font-size: 14px;
-            margin-top: 10px;
-            padding: 8px;
-            background: rgba(255, 204, 0, 0.1);
-            border-radius: 4px;
-            border: 1px solid rgba(255, 204, 0, 0.3);
-        }
-
-        .login-footer {
-            margin-top: 20px;
-            font-size: 12px;
-            color: var(--text);
-            opacity: 0.7;
-        }
-
-        .login-logo {
-            margin-bottom: 15px;
-            color: var(--primary);
-            font-size: 14px;
-            line-height: 1.2;
-        }
-
-        /* Loading spinner */
-        .spinner {
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(0, 255, 157, 0.3);
-            border-radius: 50%;
-            border-top-color: var(--primary);
-            animation: spin 1s ease-in-out infinite;
-            display: inline-block;
-            vertical-align: middle;
-            margin-right: 8px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Countdown timer */
-        .countdown {
-            font-weight: bold;
-            color: var(--warning);
-        }
-    </style>
+@media(max-width:560px){
+  .app{width:96%;padding-top:10px;}
+  .header{padding:9px 12px;}
+  .stats-row{padding:0 11px 10px;}
+  .terminal-wrap{padding:10px 11px;}
+  .terminal-output{font-size:11px;padding:10px;}
+}
+</style>
 </head>
 <body>
-    <!-- Login Modal -->
-    <div id="login-overlay" class="login-overlay" style="display: none;">
-        <div class="login-container">
-            <div class="login-header">
-                <pre class="login-logo">
-  ██████╗ ███████╗██╗██╗  ██╗███████╗██████╗ ███╗   ██╗██╗  ██╗
-  ██╔══██╗██╔════╝██║██║ ██╔╝██╔════╝██╔══██╗████╗  ██║╚██╗██╔╝
-  ██████╔╝█████╗  ██║█████╔╝ █████╗  ██████╔╝██╔██╗ ██║ ╚███╔╝ 
-  ██╔══██╗██╔══╝  ██║██╔═██╗ ██╔══╝  ██╔══██╗██║╚██╗██║ ██╔██╗ 
-  ██║  ██║███████╗██║██║  ██╗███████╗██║  ██║██║ ╚████║██╔╝ ██╗
-  ╚═╝  ╚═╝╚══════╝╚═╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝
-                </pre>
-                <h2>Authentication Required</h2>
-                <p>Please enter your password to access the terminal</p>
-            </div>
-            <form id="login-form" class="login-form">
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" placeholder="Enter your password" required>
-                </div>
-                <button type="submit" id="login-btn" class="login-btn">Login</button>
-            </form>
-            <div id="error-message" class="error-message" style="display: none;"></div>
-            <div id="lockout-message" class="lockout-message" style="display: none;"></div>
-            <div class="login-footer">
-                <p>ReikerNX Terminal v2.5.0</p>
-            </div>
-        </div>
+<div class="bg-base"></div>
+<div class="bg-glow"></div>
+<div class="conn-badge disconnected hidden" id="ws-badge">● Offline</div>
+
+<div class="toast" id="toast">
+  <div class="toast-text" id="toast-text">Command executed</div>
+</div>
+
+<div class="modal-overlay" id="login-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Authentication Required</div>
     </div>
-
-    <div class="container">
-        <h1>ReikerNX Terminal</h1>
-        <p id="user-id">User ID: Guest</p>
-
-        <div class="terminal">
-            <div id="terminal-header">Session: active-terminal-01</div>
-            <div id="terminal-output"></div>
-            <div class="input-container">
-                <input type="text" id="terminal-input" placeholder="Enter command..." autofocus>
-                <button id="send-btn" onclick="sendCommand()">Execute</button>
-            </div>
+    <div class="modal-body">
+      <div class="login-logo"><span class="flux">Flux</span>Host</div>
+      <p style="text-align:center;color:var(--text-sec);font-size:12px;margin-bottom:20px;">Enter your password to access the terminal</p>
+      <form id="login-form">
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Enter your password" required autocomplete="current-password">
         </div>
-
-        <div class="server-stats">
-            <div>CPU: <span id="cpu-usage">0%</span></div>
-            <div>RAM: <span id="ram-usage">0GB</span></div>
-            <div>Disk: <span id="disk-usage">0GB</span></div>
-            <div>Uptime: <span id="uptime">0h 0m</span></div>
-        </div>
-
-        <div class="buttons">
-            <button onclick="openFiles()">File Manager</button>
-            <button onclick="goToSettings()">Stop Server</button>
-        </div>
+        <button type="submit" id="login-btn" class="login-btn">Login</button>
+      </form>
+      <div id="error-message" class="error-message"></div>
+      <div id="lockout-message" class="lockout-message"></div>
+      <div class="login-footer">FluxHost Terminal v2.5.0</div>
     </div>
+  </div>
+</div>
 
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script>
-    // Authentication variables
-    const AUTH_TOKEN_KEY = 'reikerNX_auth_token';
-    const ATTEMPT_COUNT_KEY = 'reikerNX_login_attempts';
-    const LOCKOUT_TIME_KEY = 'reikerNX_lockout_until';
-    const MAX_ATTEMPTS = 5;
-    const LOCKOUT_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
+<div class="app" id="app" style="display:none;">
+  <div class="header glass">
+    <div class="logo" onclick="location.reload()">
+      <div class="logo-svg-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      </div>
+      <div class="logo-text"><span class="b">Flux</span>Host</div>
+    </div>
+    <div class="header-right">
+      <div class="user-pill">
+        <div class="user-avatar" id="hdr-avatar">G</div>
+        <span class="user-name" id="hdr-name">guest</span>
+      </div>
+      <div class="live-pill"><div class="live-dot"></div>ACTIVE</div>
+      <button class="theme-toggle" id="theme-btn" title="Night Mode">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="glass">
+    <div class="stats-row">
+      <div class="stat-item"><div class="s-label">CPU</div><div class="s-value" id="cpu-usage">0%</div></div>
+      <div class="stat-item"><div class="s-label">RAM</div><div class="s-value" id="ram-usage">0GB</div></div>
+      <div class="stat-item"><div class="s-label">Disk</div><div class="s-value" id="disk-usage">0GB</div></div>
+      <div class="stat-item"><div class="s-label">Uptime</div><div class="s-value" id="uptime">0m</div></div>
+    </div>
+  </div>
+
+  <div class="glass">
+    <div class="terminal-wrap">
+      <div class="terminal-header">
+        <div class="terminal-title">Terminal Session</div>
+        <div class="terminal-status" id="term-status">Ready</div>
+      </div>
+      
+      <div class="terminal-output" id="terminal-output"></div>
+      
+      <div class="terminal-input-wrap">
+        <span class="input-prompt">$</span>
+        <input type="text" class="terminal-input" id="terminal-input" placeholder="Enter command..." autocomplete="off" autofocus>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="send-btn" onclick="sendCommand()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Execute
+        </button>
+        <button class="btn btn-danger" onclick="stopCommand()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12"/></svg>
+          Stop
+        </button>
+        <button class="btn btn-secondary" onclick="clearTerminal()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+          Clear
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="glass">
+    <div class="action-buttons">
+      <button class="action-btn" onclick="openFiles()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        File Manager
+      </button>
+      <button class="action-btn" onclick="showHelp()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Help
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+/* ============================================================ NIGHT MODE ============================================================ */
+(function(){
+  const btn=document.getElementById('theme-btn');
+  if(localStorage.getItem('fluxhost-theme')==='night') document.body.classList.add('night-mode');
+  btn.addEventListener('click',function(){ 
+    document.body.classList.toggle('night-mode'); 
+    localStorage.setItem('fluxhost-theme',document.body.classList.contains('night-mode')?'night':'default'); 
+  });
+})();
+
+/* ============================================================ AUTH ============================================================ */
+const AUTH_TOKEN_KEY = 'fluxhost_auth_token';
+const ATTEMPT_COUNT_KEY = 'fluxhost_login_attempts';
+const LOCKOUT_TIME_KEY = 'fluxhost_lockout_until';
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_DURATION = 5 * 60 * 1000;
+
+let socket = null;
+let isWaitingForInput = false;
+
+document.addEventListener('DOMContentLoaded', function() {
+  checkAuthentication();
+});
+
+function checkAuthentication() {
+  const authToken = localStorage.getItem(AUTH_TOKEN_KEY);
+  const lockoutUntil = localStorage.getItem(LOCKOUT_TIME_KEY);
+  
+  if (lockoutUntil && new Date().getTime() < parseInt(lockoutUntil)) {
+    showLoginForm();
+    showLockoutMessage(parseInt(lockoutUntil));
+    return;
+  }
+  
+  if (lockoutUntil) {
+    localStorage.removeItem(LOCKOUT_TIME_KEY);
+    localStorage.removeItem(ATTEMPT_COUNT_KEY);
+  }
+  
+  if (!authToken) {
+    showLoginForm();
+  } else {
+    hideLoginForm();
+    initializeTerminal();
+  }
+}
+
+function showLoginForm() {
+  document.getElementById('login-modal').classList.add('show');
+}
+
+function hideLoginForm() {
+  document.getElementById('login-modal').classList.remove('show');
+  document.getElementById('app').style.display = 'flex';
+}
+
+document.getElementById('login-form').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  
+  const lockoutUntil = localStorage.getItem(LOCKOUT_TIME_KEY);
+  if (lockoutUntil && new Date().getTime() < parseInt(lockoutUntil)) {
+    showLockoutMessage(parseInt(lockoutUntil));
+    return;
+  }
+  
+  const passwordInput = document.getElementById('password');
+  const loginBtn = document.getElementById('login-btn');
+  const errorMessage = document.getElementById('error-message');
+  
+  loginBtn.disabled = true;
+  loginBtn.innerHTML = '<span class="spinner"></span> Verifying...';
+  errorMessage.style.display = 'none';
+  
+  try {
+    const isValid = await validatePassword(passwordInput.value);
     
-    // Check authentication on page load
-    document.addEventListener('DOMContentLoaded', function() {
-        checkAuthentication();
+    if (isValid) {
+      const token = generateToken();
+      localStorage.setItem(AUTH_TOKEN_KEY, token);
+      localStorage.removeItem(ATTEMPT_COUNT_KEY);
+      localStorage.removeItem(LOCKOUT_TIME_KEY);
+      
+      hideLoginForm();
+      initializeTerminal();
+    } else {
+      incrementLoginAttempts();
+      errorMessage.textContent = 'Invalid password. Please try again.';
+      errorMessage.style.display = 'block';
+      passwordInput.value = '';
+      passwordInput.focus();
+    }
+  } catch (error) {
+    errorMessage.textContent = 'Network error. Please try again.';
+    errorMessage.style.display = 'block';
+  } finally {
+    loginBtn.disabled = false;
+    loginBtn.textContent = 'Login';
+  }
+});
+
+function incrementLoginAttempts() {
+  let attempts = parseInt(localStorage.getItem(ATTEMPT_COUNT_KEY) || '0');
+  attempts++;
+  localStorage.setItem(ATTEMPT_COUNT_KEY, attempts);
+  
+  if (attempts >= MAX_ATTEMPTS) {
+    const lockoutUntil = new Date().getTime() + LOCKOUT_DURATION;
+    localStorage.setItem(LOCKOUT_TIME_KEY, lockoutUntil);
+    showLockoutMessage(lockoutUntil);
+  } else {
+    const errorMessage = document.getElementById('error-message');
+    errorMessage.textContent = `Invalid password. ${MAX_ATTEMPTS - attempts} attempts remaining.`;
+  }
+}
+
+function showLockoutMessage(lockoutUntil) {
+  const loginBtn = document.getElementById('login-btn');
+  const errorMessage = document.getElementById('error-message');
+  const lockoutMessage = document.getElementById('lockout-message');
+  
+  loginBtn.disabled = true;
+  document.getElementById('password').disabled = true;
+  errorMessage.style.display = 'none';
+  lockoutMessage.style.display = 'block';
+  
+  updateLockoutCountdown(lockoutUntil);
+}
+
+function updateLockoutCountdown(lockoutUntil) {
+  const lockoutMessage = document.getElementById('lockout-message');
+  const now = new Date().getTime();
+  const timeLeft = Math.max(0, lockoutUntil - now);
+  
+  if (timeLeft <= 0) {
+    localStorage.removeItem(LOCKOUT_TIME_KEY);
+    localStorage.removeItem(ATTEMPT_COUNT_KEY);
+    document.getElementById('login-btn').disabled = false;
+    document.getElementById('password').disabled = false;
+    lockoutMessage.style.display = 'none';
+    return;
+  }
+  
+  const minutes = Math.floor(timeLeft / (60 * 1000));
+  const seconds = Math.floor((timeLeft % (60 * 1000)) / 1000);
+  
+  lockoutMessage.innerHTML = `Too many failed attempts. Try again in <strong>${minutes}m ${seconds}s</strong>`;
+  setTimeout(() => updateLockoutCountdown(lockoutUntil), 1000);
+}
+
+function generateToken() {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
+
+async function validatePassword(inputPassword) {
+  try {
+    const res = await fetch('/check-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: inputPassword })
     });
-    
-    // Authentication functions
-    function checkAuthentication() {
-        const authToken = localStorage.getItem(AUTH_TOKEN_KEY);
-        const lockoutUntil = localStorage.getItem(LOCKOUT_TIME_KEY);
-        
-        // Check if user is locked out
-        if (lockoutUntil && new Date().getTime() < parseInt(lockoutUntil)) {
-            showLoginForm();
-            showLockoutMessage(parseInt(lockoutUntil));
-            return;
-        }
-        
-        // Clear lockout if it's expired
-        if (lockoutUntil) {
-            localStorage.removeItem(LOCKOUT_TIME_KEY);
-            localStorage.removeItem(ATTEMPT_COUNT_KEY);
-        }
-        
-        // If no auth token, show login form
-        if (!authToken) {
-            showLoginForm();
-        } else {
-            // Auth token exists, initialize the terminal
-            hideLoginForm();
-            initializeTerminal();
-        }
-    }
-    
-    function showLoginForm() {
-        document.getElementById('login-overlay').style.display = 'flex';
-    }
-    
-    function hideLoginForm() {
-        document.getElementById('login-overlay').style.display = 'none';
-    }
-    
-    // Handle login form submission
-    document.getElementById('login-form').addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        // Check if user is locked out
-        const lockoutUntil = localStorage.getItem(LOCKOUT_TIME_KEY);
-        if (lockoutUntil && new Date().getTime() < parseInt(lockoutUntil)) {
-            showLockoutMessage(parseInt(lockoutUntil));
-            return;
-        }
-        
-        const passwordInput = document.getElementById('password');
-        const loginBtn = document.getElementById('login-btn');
-        const errorMessage = document.getElementById('error-message');
-        
-        // Disable button and show loading state
-        loginBtn.disabled = true;
-        loginBtn.innerHTML = '<span class="spinner"></span> Verifying...';
-        errorMessage.style.display = 'none';
-        
-        try {
-            // Validate password with server
-            const isValid = await validatePassword(passwordInput.value);
-            
-            if (isValid) {
-                // Success - store auth token and reset attempts
-                const token = generateToken();
-                localStorage.setItem(AUTH_TOKEN_KEY, token);
-                localStorage.removeItem(ATTEMPT_COUNT_KEY);
-                localStorage.removeItem(LOCKOUT_TIME_KEY);
-                
-                // Hide login form and initialize terminal
-                hideLoginForm();
-                initializeTerminal();
-            } else {
-                // Failed login - increment attempt counter
-                incrementLoginAttempts();
-                
-                // Show error message
-                errorMessage.textContent = 'Invalid password. Please try again.';
-                errorMessage.style.display = 'block';
-                
-                // Clear password field
-                passwordInput.value = '';
-                passwordInput.focus();
-            }
-        } catch (error) {
-            // Handle network errors
-            errorMessage.textContent = 'Network error. Please try again.';
-            errorMessage.style.display = 'block';
-        } finally {
-            // Reset button state
-            loginBtn.disabled = false;
-            loginBtn.textContent = 'Login';
-        }
+    const data = await res.json();
+    return res.ok;
+  } catch (error) {
+    console.error('Network error:', error);
+    return false;
+  }
+}
+
+/* ============================================================ TERMINAL ============================================================ */
+function initializeTerminal() {
+  const outputDiv = document.getElementById("terminal-output");
+  outputDiv.innerHTML = `<div style="color:var(--purple-accent);font-weight:600;margin-bottom:10px;">
+╔════════════════════════════════════════╗
+║  ███████╗██╗     ██╗   ██╗██╗  ██╗    ║
+║  ██╔════╝██║     ██║   ██║╚██╗██╔╝    ║
+║  █████╗  ██║     ██║   ██║ ╚███╔╝     ║
+║  ██╔══╝  ██║     ██║   ██║ ██╔██╗     ║
+║  ██║     ███████╗╚██████╔╝██╔╝ ██╗    ║
+║  ╚═╝     ╚══════╝ ╚═════╝ ╚═╝  ╚═╝    ║
+║              HOST TERMINAL             ║
+╚════════════════════════════════════════╝
+
+<span style="color:var(--text-sec);">Welcome to FluxHost Terminal v2.5.0</span>
+<span style="color:var(--text-dim);">Authentication successful.</span>
+<span style="color:var(--text-dim);">Type 'help' for available commands.</span>
+</div>`;
+  
+  loadCommandHistory();
+  setInterval(fetchStats, 5000);
+  fetchStats();
+  connectWS();
+  
+  document.getElementById('terminal-input').focus();
+  document.getElementById('hdr-avatar').textContent = 'U';
+  document.getElementById('hdr-name').textContent = 'user';
+}
+
+function connectWS() {
+  socket = io({ transports: ['websocket', 'polling'] });
+  
+  socket.on('connect', () => {
+    setConn('connected');
+  });
+  
+  socket.on('disconnect', () => {
+    setConn('disconnected');
+  });
+  
+  socket.on('connect_error', () => {
+    setConn('reconnecting');
+  });
+  
+  socket.on('output', (data) => {
+    const outputDiv = document.getElementById('terminal-output');
+    const lines = data.response.split('\n');
+    lines.forEach(line => {
+      const lineClass = line.toLowerCase().includes('error') ? 'error-line' : 
+                       line.toLowerCase().includes('warning') ? 'warning-line' : 
+                       line.toLowerCase().includes('success') ? 'success-line' : '';
+      outputDiv.innerHTML += `<div class="output-line ${lineClass}">${escapeHtml(line)}</div>`;
     });
+    outputDiv.scrollTop = outputDiv.scrollHeight;
+    saveCommandHistory(data.response);
     
-    function incrementLoginAttempts() {
-        let attempts = parseInt(localStorage.getItem(ATTEMPT_COUNT_KEY) || '0');
-        attempts++;
-        localStorage.setItem(ATTEMPT_COUNT_KEY, attempts);
-        
-        // Check if max attempts reached
-        if (attempts >= MAX_ATTEMPTS) {
-            const lockoutUntil = new Date().getTime() + LOCKOUT_DURATION;
-            localStorage.setItem(LOCKOUT_TIME_KEY, lockoutUntil);
-            showLockoutMessage(lockoutUntil);
-        } else {
-            // Show remaining attempts
-            const errorMessage = document.getElementById('error-message');
-            errorMessage.textContent = `Invalid password. ${MAX_ATTEMPTS - attempts} attempts remaining before lockout.`;
-        }
+    if (data.response.trim().endsWith(':') || 
+        data.response.toLowerCase().includes('password') || 
+        data.response.toLowerCase().includes('enter')) {
+      isWaitingForInput = true;
+      setStatus('waiting');
+    } else {
+      isWaitingForInput = false;
+      setStatus('ready');
     }
-    
-    function showLockoutMessage(lockoutUntil) {
-        const loginBtn = document.getElementById('login-btn');
-        const errorMessage = document.getElementById('error-message');
-        const lockoutMessage = document.getElementById('lockout-message');
-        
-        // Disable login form
-        loginBtn.disabled = true;
-        document.getElementById('password').disabled = true;
-        
-        // Hide error message and show lockout message
-        errorMessage.style.display = 'none';
-        lockoutMessage.style.display = 'block';
-        
-        // Start countdown
-        updateLockoutCountdown(lockoutUntil);
-    }
-    
-    function updateLockoutCountdown(lockoutUntil) {
-        const lockoutMessage = document.getElementById('lockout-message');
-        const now = new Date().getTime();
-        const timeLeft = Math.max(0, lockoutUntil - now);
-        
-        if (timeLeft <= 0) {
-            // Lockout expired
-            localStorage.removeItem(LOCKOUT_TIME_KEY);
-            localStorage.removeItem(ATTEMPT_COUNT_KEY);
-            
-            // Re-enable login form
-            document.getElementById('login-btn').disabled = false;
-            document.getElementById('password').disabled = false;
-            lockoutMessage.style.display = 'none';
-            
-            return;
-        }
-        
-        // Calculate minutes and seconds
-        const minutes = Math.floor(timeLeft / (60 * 1000));
-        const seconds = Math.floor((timeLeft % (60 * 1000)) / 1000);
-        
-        // Update message
-        lockoutMessage.innerHTML = `Too many failed attempts. Please try again in <span class="countdown">${minutes}m ${seconds}s</span>`;
-        
-        // Update countdown every second
-        setTimeout(() => updateLockoutCountdown(lockoutUntil), 1000);
-    }
-    
-    // Generate a random token for auth
-    function generateToken() {
-        return Math.random().toString(36).substring(2, 15) + 
-               Math.random().toString(36).substring(2, 15);
-    }
-    
-    // Password validation function (provided by user)
-    async function validatePassword(inputPassword) {
-      try {
-        const res = await fetch('/check-password', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password: inputPassword })
-        });
+  });
+  
+  socket.on('command_started', () => {
+    setStatus('running');
+  });
+  
+  socket.on('command_ended', () => {
+    setStatus('ready');
+  });
+}
 
-        const data = await res.json();
+function setConn(s) {
+  const el = document.getElementById('ws-badge');
+  el.className = 'conn-badge ' + s;
+  el.textContent = {
+    connected: '● Connected',
+    disconnected: '● Offline',
+    reconnecting: '● Reconnecting…'
+  }[s];
+  if (s === 'connected') setTimeout(() => el.classList.add('hidden'), 3000);
+  else el.classList.remove('hidden');
+}
 
-        if (res.ok) {
-          console.log('Access granted:', data.message);
-          return true;
-        } else {
-          console.log('Access denied:', data.message);
-          return false;
-        }
-      } catch (error) {
-        console.error('Network or server error:', error);
-        return false;
-      }
-    }
-    
-    // Initialize terminal after successful authentication
-    function initializeTerminal() {
-        // Add welcome message
-        const outputDiv = document.getElementById("terminal-output");
-        outputDiv.innerHTML = `<pre style="color: #00ff9d; font-weight: bold;">
-╔═══════════════════════════════════════════════════════════════╗
-║                                                               ║
-║   ██████╗ ███████╗██╗██╗  ██╗███████╗██████╗ ███╗   ██╗██╗  ██╗║
-║   ██╔══██╗██╔════╝██║██║ ██╔╝██╔════╝██╔══██╗████╗  ██║╚██╗██╔╝║
-║   ██████╔╝█████╗  ██║█████╔╝ █████╗  ██████╔╝██╔██╗ ██║ ╚███╔╝ ║
-║   ██╔══██╗██╔══╝  ██║██╔═██╗ ██╔══╝  ██╔══██╗██║╚██╗██║ ██╔██╗ ║
-║   ██║  ██║███████╗██║██║  ██╗███████╗██║  ██║██║ ╚████║██╔╝ ██╗║
-║   ╚═╝  ╚═╝╚══════╝╚═╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═╝║
-║                                                               ║
-╚═══════════════════════════════════════════════════════════════╝
+function setStatus(s) {
+  const el = document.getElementById('term-status');
+  const text = {
+    ready: 'Ready',
+    running: 'Running',
+    waiting: 'Waiting'
+  }[s] || 'Ready';
+  el.textContent = text;
+  el.className = 'terminal-status' + (s === 'waiting' ? ' waiting' : '');
+}
 
-Welcome to ReikerNX Terminal v2.5.0
-Server: mc-survival-01 • Node: us-east-01
+document.getElementById('terminal-input').addEventListener('keypress', function(event) {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    sendCommand();
+  }
+});
 
-Authentication successful. Terminal access granted.
-Type 'help' for a list of available commands.
-</pre>`;
-        
-        // Load command history
-        loadCommandHistory();
-        
-        // Start stats update interval
-        setInterval(fetchStatsAndUpdates, 5000);
-        
-        // Initial stats fetch
-        fetchStatsAndUpdates();
-        
-        // Focus on terminal input
-        document.getElementById('terminal-input').focus();
-    }
-    
-    // Original terminal functionality
-    const socket = io();
+function sendCommand() {
+  const inputField = document.getElementById('terminal-input');
+  const inputText = inputField.value.trim();
+  
+  if (!inputText) return;
+  
+  printCommand(inputText);
+  
+  if (isWaitingForInput) {
+    socket.emit('input', { text: inputText + '\n' });
+  } else {
+    socket.emit('command', { command: inputText });
+  }
+  
+  inputField.value = '';
+}
 
-    document.getElementById("terminal-input").addEventListener("keypress", function (event) {
-        if (event.key === "Enter" || event.keyCode === 13) {
-            event.preventDefault(); // Prevent unintended form submissions
-            sendCommand();
-        }
-    });
+function printCommand(command) {
+  const outputDiv = document.getElementById('terminal-output');
+  outputDiv.innerHTML += `<div class="command-line">${escapeHtml(command)}</div>`;
+  outputDiv.scrollTop = outputDiv.scrollHeight;
+}
 
-    // iOS "Done" Button Fix
-    document.getElementById("terminal-input").addEventListener("keypress", function (event) {
-        if (event.key === "Enter" || event.keyCode === 13) {
-            event.preventDefault(); // Prevent unintended form submissions
-            handleInput();
-        }
-    });
+function stopCommand() {
+  socket.emit('stop', {});
+  showToast('Stopping command...');
+}
 
-    // iOS "Done" Button Fix
-    document.getElementById("terminal-input").addEventListener("blur", function () {
-        if (this.value.trim() !== "") {
-            handleInput();
-        }
-    });
+function clearTerminal() {
+  document.getElementById('terminal-output').innerHTML = '';
+  localStorage.removeItem('commandHistory');
+  showToast('Terminal cleared');
+}
 
-    function handleInput() {
-        const inputField = document.getElementById("terminal-input");
-        const inputText = inputField.value.trim();
-        
-        if (!inputText) return; // Ignore empty input
+function fetchStats() {
+  fetch('/stats')
+    .then(response => response.json())
+    .then(data => {
+      document.getElementById('cpu-usage').textContent = data.cpu;
+      document.getElementById('ram-usage').textContent = data.ram;
+      document.getElementById('disk-usage').textContent = data.disk;
+      document.getElementById('uptime').textContent = data.uptime;
+    })
+    .catch(error => console.error('Error fetching stats:', error));
+}
 
-        printCommand(inputText);  // Display input in terminal
+function saveCommandHistory(entry) {
+  let history = JSON.parse(localStorage.getItem('commandHistory')) || [];
+  history.push(entry);
+  if (history.length > 100) history = history.slice(-100);
+  localStorage.setItem('commandHistory', JSON.stringify(history));
+}
 
-        if (isWaitingForInput) {
-            socket.emit("input", { text: inputText + "\n" });  // Send user input to backend
-        } else {
-            socket.emit("command", { command: inputText });  // Execute new command
-        }
+function loadCommandHistory() {
+  const outputDiv = document.getElementById('terminal-output');
+  let history = JSON.parse(localStorage.getItem('commandHistory')) || [];
+  history.forEach(entry => {
+    outputDiv.innerHTML += `<div class="output-line">${escapeHtml(entry)}</div>`;
+  });
+  outputDiv.scrollTop = outputDiv.scrollHeight;
+}
 
-        inputField.value = "";  // Clear input field
-    }
+function openFiles() {
+  window.location.href = '/myfiles';
+}
 
-    function printCommand(command) {
-        const outputDiv = document.getElementById("terminal-output");
-        outputDiv.innerHTML += `<pre class="command" style="white-space: pre-wrap; word-break: break-word;">${command}</pre>`;
-        outputDiv.scrollTop = outputDiv.scrollHeight;
-    }
+function showHelp() {
+  const helpText = `
+<span style="color:var(--purple-accent);font-weight:600;">Available Commands:</span>
+<span style="color:var(--text-sec);">ls - List files</span>
+<span style="color:var(--text-sec);">cd - Change directory</span>
+<span style="color:var(--text-sec);">cat - Display file</span>
+<span style="color:var(--text-sec);">pwd - Current directory</span>
+<span style="color:var(--text-sec);">mkdir - Create directory</span>
+<span style="color:var(--text-sec);">touch - Create file</span>
+<span style="color:var(--text-sec);">python - Run Python</span>
+<span style="color:var(--text-sec);">node - Run Node.js</span>
+<span style="color:var(--text-sec);">npm/pip - Packages</span>
+<span style="color:var(--text-sec);">clear - Clear terminal</span>
+`;
+  const outputDiv = document.getElementById('terminal-output');
+  outputDiv.innerHTML += helpText;
+  outputDiv.scrollTop = outputDiv.scrollHeight;
+}
 
-    // Track if the process is waiting for user input
-    let isWaitingForInput = false;
+function showToast(message) {
+  const toast = document.getElementById('toast');
+  const toastText = document.getElementById('toast-text');
+  toastText.textContent = message;
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
+}
 
-    socket.on("output", (data) => {
-        const outputDiv = document.getElementById("terminal-output");
-
-        // Split the output into lines, ensuring they don't stretch
-        const lines = data.response.split('\n');
-        lines.forEach(line => {
-            outputDiv.innerHTML += `<pre style="white-space: pre-wrap; word-break: break-word;">${line}</pre>`;
-        });
-
-        outputDiv.scrollTop = outputDiv.scrollHeight;
-
-        // Save command output in local storage
-        saveCommandHistory(data.response);
-
-        // Detect if the process is waiting for user input (rudimentary check)
-        if (data.response.trim().endsWith(":") || data.response.toLowerCase().includes("password") || data.response.toLowerCase().includes("enter")) {
-            isWaitingForInput = true;
-        } else {
-            isWaitingForInput = false;
-        }
-    });
-
-    function fetchStatsAndUpdates() {
-        fetch("/stats")
-            .then(response => response.json())
-            .then(data => {
-                document.getElementById("cpu-usage").textContent = data.cpu;
-                document.getElementById("ram-usage").textContent = data.ram;
-                document.getElementById("disk-usage").textContent = data.disk;
-                document.getElementById("uptime").textContent = data.uptime;
-            })
-            .catch(error => console.error("Error fetching stats:", error));
-    }
-
-    // Save command output in local storage
-    function saveCommandHistory(entry) {
-        let history = JSON.parse(localStorage.getItem("commandHistory")) || [];
-        history.push(entry);
-        localStorage.setItem("commandHistory", JSON.stringify(history));
-    }
-
-    // Load previous updates on page load
-    function loadCommandHistory() {
-        const outputDiv = document.getElementById("terminal-output");
-        let history = JSON.parse(localStorage.getItem("commandHistory")) || [];
-        history.forEach(entry => {
-            outputDiv.innerHTML += `<pre style="white-space: pre-wrap; word-break: break-word;">${entry}</pre>`;
-        });
-        outputDiv.scrollTop = outputDiv.scrollHeight;
-    }
-
-    function openFiles() {
-        window.location.href = "/myfiles"; // Redirect to /myfiles
-    }
-
-    function goToSettings() {
-        socket.emit("stop", { session_id: "global" });
-        alert("Stopping running command...");
-    }
-
-    // Alias sendCommand to handleInput for compatibility
-    function sendCommand() {
-        handleInput();
-    }
-    
-    // Logout function
-    function logout() {
-        localStorage.removeItem(AUTH_TOKEN_KEY);
-        window.location.reload();
-    }
-    </script>
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+</script>
 </body>
 </html>
