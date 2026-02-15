@@ -188,30 +188,26 @@ def cleanup_zombie_processes():
 
 @socketio.on('command')
 def handle_command(data):
-    """Executes any command sent by the client inside /app/home jail."""
-    user_command = data.get("command", "").strip()
+    """Executes any command sent by the client."""
+    full_command = data.get("command", "").strip()
 
-    if not user_command:
+    if not full_command:
         socketio.emit("output", {"response": "ERROR: No command provided."}, room=request.sid)
         return
 
     with process_lock:
         if request.sid in processes:
-            socketio.emit("output", {"response": "ERROR: Another command is already running."}, room=request.sid)
+            socketio.emit("output", {"response": "ERROR: Another command is already running. Wait until it finishes."}, room=request.sid)
             return
 
-    socketio.emit("command_started", room=request.sid)
+    socketio.emit("command_started", room=request.sid)  # Notify frontend
 
     def run_command(sid):
         try:
-            # Wrap the user command with chroot
-            # Note: chroot requires absolute path of command; use /bin/sh for shell commands
-            full_command = f'chroot {HOME_DIR} /bin/sh -c "{user_command}"'
-
             process = subprocess.Popen(
                 full_command,
                 shell=True,
-                cwd="/",  # After chroot, / is HOME_DIR
+                cwd=HOME_DIR,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 stdin=subprocess.PIPE,
@@ -224,18 +220,19 @@ def handle_command(data):
             with process_lock:
                 processes[sid] = process
 
-            log_message(f"Started chrooted process {process.pid} for session {sid}")
+            log_message(f"Started process {process.pid} for session {sid}")
 
-            # Stream output
+            # Read stdout and stderr without blocking
             while process.poll() is None:
                 read_fds, _, _ = select.select([process.stdout, process.stderr], [], [], 0.1)
                 for stream in read_fds:
                     line = stream.readline().strip()
                     if line:
                         socketio.emit("output", {"response": line}, room=sid)
+
                 socketio.sleep(0.1)
 
-            # Flush remaining output
+            # Read remaining output
             for stream in (process.stdout, process.stderr):
                 for line in stream:
                     line = line.strip()
@@ -251,7 +248,7 @@ def handle_command(data):
         finally:
             with process_lock:
                 processes.pop(sid, None)
-            socketio.emit("command_ended", room=sid)
+            socketio.emit("command_ended", room=sid)  # Notify frontend
 
     socketio.start_background_task(run_command, request.sid)
 
