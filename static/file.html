@@ -281,6 +281,7 @@ body.night-mode .glass{
       <div class="bulk-count"><span id="selected-count">0</span> selected</div>
       <div class="bulk-actions">
         <button class="bulk-btn" onclick="selectAllFiles(false)">Deselect</button>
+        <button class="bulk-btn" onclick="moveSelected()">Move</button>
         <button class="bulk-btn danger" onclick="deleteSelected()">Delete</button>
         <button class="bulk-btn" onclick="zipSelected()">Zip</button>
       </div>
@@ -483,7 +484,6 @@ async function openFile(name) {
     document.getElementById('editor-textarea').value = data.content;
     document.getElementById('editor-container').classList.add('show');
     updateLineNumbers();
-    applySyntaxHighlighting();
   } catch (error) {
     showToast('Error opening file');
   }
@@ -491,187 +491,32 @@ async function openFile(name) {
 
 /* ============================================================ SYNTAX HIGHLIGHTING ============================================================ */
 function applySyntaxHighlighting() {
-  const textarea = document.getElementById('editor-textarea');
-  const fileName = currentEditingFile.toLowerCase();
-  
-  // Detect file type
-  let language = 'none';
-  if (fileName.endsWith('.py')) language = 'python';
-  else if (fileName.endsWith('.js') || fileName.endsWith('.jsx') || fileName.endsWith('.ts') || fileName.endsWith('.tsx')) language = 'javascript';
-  else if (fileName.endsWith('.json')) language = 'json';
-  else if (fileName.endsWith('.html') || fileName.endsWith('.htm')) language = 'html';
-  else if (fileName.endsWith('.css')) language = 'css';
-  
-  // Add event listener for syntax highlighting as user types
-  textarea.removeEventListener('input', handleSyntaxInput);
-  textarea.addEventListener('input', handleSyntaxInput);
-  
-  // Initial highlight
-  highlightSyntax(textarea, language);
+  // Disabled - causes line alignment issues
+  return;
 }
 
 function handleSyntaxInput(e) {
-  const textarea = e.target;
-  const fileName = currentEditingFile.toLowerCase();
-  let language = 'none';
-  if (fileName.endsWith('.py')) language = 'python';
-  else if (fileName.endsWith('.js') || fileName.endsWith('.jsx') || fileName.endsWith('.ts') || fileName.endsWith('.tsx')) language = 'javascript';
-  
-  highlightSyntax(textarea, language);
+  // Disabled - causes line alignment issues  
+  return;
 }
 
 function highlightSyntax(textarea, language) {
-  // Store cursor position
-  const cursorPos = textarea.selectionStart;
-  const scrollPos = textarea.scrollTop;
+  // Don't use overlay highlighting - it causes too many issues
+  // Just let the user see their code normally
+  textarea.style.color = 'var(--text-primary)';
+  textarea.style.background = 'rgba(0,0,0,0.2)';
   
-  let code = textarea.value;
-  
-  if (language === 'python') {
-    code = highlightPython(code);
-  } else if (language === 'javascript') {
-    code = highlightJavaScript(code);
-  }
-  
-  // Create or update overlay
-  let overlay = document.getElementById('syntax-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.id = 'syntax-overlay';
-    overlay.style.cssText = `
-      position: absolute;
-      top: 0;
-      left: 50px;
-      right: 0;
-      bottom: 0;
-      padding: 12px;
-      font-family: 'Courier New', Courier, monospace;
-      font-size: 12px;
-      line-height: 1.6;
-      color: transparent;
-      pointer-events: none;
-      white-space: pre-wrap;
-      word-wrap: break-word;
-      overflow: hidden;
-      z-index: 1;
-    `;
-    textarea.parentElement.style.position = 'relative';
-    textarea.parentElement.insertBefore(overlay, textarea);
-    
-    // Make textarea transparent but keep caret visible
-    textarea.style.color = 'transparent';
-    textarea.style.caretColor = '#fff';
-    textarea.style.position = 'relative';
-    textarea.style.zIndex = '2';
-    textarea.style.background = 'transparent';
-  }
-  
-  overlay.innerHTML = code;
-  
-  // Restore cursor and scroll
-  textarea.setSelectionRange(cursorPos, cursorPos);
-  textarea.scrollTop = scrollPos;
-  overlay.scrollTop = scrollPos;
-  
-  // Sync scrolling
-  textarea.addEventListener('scroll', function() {
-    overlay.scrollTop = textarea.scrollTop;
-  });
+  // Remove any existing overlay
+  const overlay = document.getElementById('syntax-overlay');
+  if (overlay) overlay.remove();
 }
 
 function highlightPython(code) {
-  // Python keywords
-  const keywords = ['def', 'class', 'if', 'elif', 'else', 'for', 'while', 'try', 'except', 'finally', 
-                   'import', 'from', 'as', 'return', 'yield', 'lambda', 'with', 'pass', 'break', 
-                   'continue', 'and', 'or', 'not', 'in', 'is', 'None', 'True', 'False', 'async', 'await'];
-  
-  const builtins = ['print', 'input', 'len', 'range', 'str', 'int', 'float', 'list', 'dict', 'set', 
-                   'tuple', 'open', 'file', 'type', 'isinstance', 'super', 'self'];
-  
-  // Escape HTML
-  code = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  
-  // Highlight comments
-  code = code.replace(/(#.*$)/gm, '<span style="color:#5c6370;font-style:italic;">$1</span>');
-  
-  // Highlight strings
-  code = code.replace(/("[^"]*"|'[^']*'|'''[\s\S]*?'''|"""[\s\S]*?""")/g, '<span style="color:#98c379;">$1</span>');
-  
-  // Highlight numbers
-  code = code.replace(/\b(\d+\.?\d*)\b/g, '<span style="color:#d19a66;">$1</span>');
-  
-  // Highlight keywords
-  keywords.forEach(kw => {
-    const regex = new RegExp(`\\b${kw}\\b`, 'g');
-    code = code.replace(regex, `<span style="color:#c678dd;">${kw}</span>`);
-  });
-  
-  // Highlight builtins
-  builtins.forEach(fn => {
-    const regex = new RegExp(`\\b${fn}\\b`, 'g');
-    code = code.replace(regex, `<span style="color:#61afef;">${fn}</span>`);
-  });
-  
-  // Highlight function definitions
-  code = code.replace(/\b(def)\s+([a-zA-Z_][a-zA-Z0-9_]*)/g, 
-    '<span style="color:#c678dd;">$1</span> <span style="color:#e5c07b;">$2</span>');
-  
-  // Highlight class definitions
-  code = code.replace(/\b(class)\s+([a-zA-Z_][a-zA-Z0-9_]*)/g, 
-    '<span style="color:#c678dd;">$1</span> <span style="color:#e5c07b;">$2</span>');
-  
-  return code;
+  return code; // Disabled for now
 }
 
 function highlightJavaScript(code) {
-  // JavaScript keywords
-  const keywords = ['const', 'let', 'var', 'function', 'if', 'else', 'for', 'while', 'do', 'switch', 
-                   'case', 'default', 'break', 'continue', 'return', 'try', 'catch', 'finally', 
-                   'throw', 'new', 'this', 'class', 'extends', 'import', 'export', 'from', 'as', 
-                   'async', 'await', 'yield', 'typeof', 'instanceof', 'delete', 'void', 'null', 
-                   'undefined', 'true', 'false'];
-  
-  const builtins = ['console', 'log', 'warn', 'error', 'document', 'window', 'setTimeout', 'setInterval',
-                   'parseInt', 'parseFloat', 'isNaN', 'Array', 'Object', 'String', 'Number', 'Boolean',
-                   'Math', 'Date', 'JSON', 'Promise', 'fetch'];
-  
-  // Escape HTML
-  code = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  
-  // Highlight comments
-  code = code.replace(/(\/\/.*$)/gm, '<span style="color:#5c6370;font-style:italic;">$1</span>');
-  code = code.replace(/(\/\*[\s\S]*?\*\/)/g, '<span style="color:#5c6370;font-style:italic;">$1</span>');
-  
-  // Highlight strings
-  code = code.replace(/("[^"]*"|'[^']*'|`[^`]*`)/g, '<span style="color:#98c379;">$1</span>');
-  
-  // Highlight numbers
-  code = code.replace(/\b(\d+\.?\d*)\b/g, '<span style="color:#d19a66;">$1</span>');
-  
-  // Highlight special keywords with different colors
-  code = code.replace(/\b(const)\b/g, '<span style="color:#61afef;">$1</span>');
-  code = code.replace(/\b(let)\b/g, '<span style="color:#e5c07b;">$1</span>');
-  code = code.replace(/\b(var)\b/g, '<span style="color:#d19a66;">$1</span>');
-  code = code.replace(/\b(function)\b/g, '<span style="color:#c678dd;">$1</span>');
-  
-  // Highlight other keywords
-  keywords.forEach(kw => {
-    if (!['const', 'let', 'var', 'function'].includes(kw)) {
-      const regex = new RegExp(`\\b${kw}\\b`, 'g');
-      code = code.replace(regex, `<span style="color:#c678dd;">${kw}</span>`);
-    }
-  });
-  
-  // Highlight builtins
-  builtins.forEach(fn => {
-    const regex = new RegExp(`\\b${fn}\\b`, 'g');
-    code = code.replace(regex, `<span style="color:#61afef;">${fn}</span>`);
-  });
-  
-  // Highlight function calls
-  code = code.replace(/\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\(/g, '<span style="color:#61afef;">$1</span>(');
-  
-  return code;
+  return code; // Disabled for now
 }
 
 async function saveFile() {
@@ -869,6 +714,39 @@ async function deleteSelected() {
   }
   
   showToast(`Deleted ${selectedFiles.size} files`);
+  selectedFiles.clear();
+  loadFiles(currentPath);
+}
+
+async function moveSelected() {
+  if (!selectedFiles.size) {
+    showToast('No files selected');
+    return;
+  }
+  
+  const targetPath = prompt('Move to path (e.g., subfolder or ../parent):', '');
+  if (targetPath === null) return;
+  
+  let successCount = 0;
+  
+  for (const name of selectedFiles) {
+    const oldPath = currentPath ? `${currentPath}/${name}` : name;
+    const newPath = targetPath ? `${targetPath}/${name}` : name;
+    
+    try {
+      const res = await fetch(`${serverUrl}/rename`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ old_name: oldPath, new_name: newPath })
+      });
+      
+      if (res.ok) successCount++;
+    } catch (error) {
+      console.error('Error moving file:', error);
+    }
+  }
+  
+  showToast(`Moved ${successCount} of ${selectedFiles.size} files`);
   selectedFiles.clear();
   loadFiles(currentPath);
 }
