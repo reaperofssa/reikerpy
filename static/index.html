@@ -236,6 +236,14 @@ body.night-mode .glass{
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:all;}
 .toast-text{color:white;font-size:13px;font-weight:600;word-break:break-word;}
 
+.saved-commands-list{display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;}
+.saved-empty{color:var(--text-dim);font-size:12px;padding:4px 2px;}
+.saved-cmd-row{display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border-radius:8px;padding:6px 10px;}
+.saved-cmd-label{flex:1;font-size:12px;color:var(--text-sec);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:monospace;}
+.saved-cmd-run,.saved-cmd-del{background:none;border:none;cursor:pointer;font-size:12px;color:var(--text-dim);padding:2px 6px;border-radius:6px;}
+.saved-cmd-run:hover{color:var(--purple-accent);}
+.saved-cmd-del:hover{color:#e05d5d;}
+
 @media(max-width:560px){
   .app{width:96%;padding-top:10px;}
   .header{padding:9px 12px;}
@@ -293,6 +301,9 @@ body.night-mode .glass{
       <button class="theme-toggle" id="theme-btn" title="Night Mode">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
       </button>
+      <button class="theme-toggle" id="logout-btn" title="Log out" onclick="logout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
     </div>
   </div>
 
@@ -323,6 +334,25 @@ body.night-mode .glass{
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
           Clear
         </button>
+        <button class="btn btn-secondary" onclick="clearServerHistory()" title="Clear saved command history on the server">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          Clear History
+        </button>
+        <button class="btn btn-secondary" onclick="saveCurrentCommand()" title="Save the current input as a favorite command">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="glass">
+    <div class="terminal-wrap" style="padding-top:12px;">
+      <div class="terminal-header">
+        <div class="terminal-title">Saved Commands</div>
+      </div>
+      <div id="saved-commands-list" class="saved-commands-list">
+        <div class="saved-empty">No saved commands yet</div>
       </div>
     </div>
   </div>
@@ -348,6 +378,23 @@ body.night-mode .glass{
       </button>
     </div>
   </div>
+  <div class="glass">
+    <div class="terminal-wrap" style="padding-top:12px;">
+      <div class="terminal-header">
+        <div class="terminal-title">Proxy Rules</div>
+      </div>
+      <div class="terminal-input-wrap" style="gap:8px;">
+        <input type="text" class="terminal-input" id="proxy-host-input" placeholder="host, e.g. facebook.com" autocomplete="off">
+        <input type="text" class="terminal-input" id="proxy-url-input" placeholder="http://ip:port" autocomplete="off">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="addProxyRule()">Add Rule</button>
+      </div>
+      <div id="proxy-rules-list" class="saved-commands-list" style="margin-top:10px;">
+        <div class="saved-empty">No proxy rules yet</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -363,7 +410,11 @@ body.night-mode .glass{
 })();
 
 /* ============================================================ AUTH ============================================================ */
-const AUTH_TOKEN_KEY = 'fluxhost_auth_token';
+// The backend issues an HttpOnly session cookie on /check-password and reads
+// it on every request (see enforce_auth in server_3.py). We never see the
+// cookie's value in JS -- we just need to always send credentials, and ask
+// the server whether we're still authenticated (a gated route like
+// /session-info returns 401 if the cookie is missing/expired).
 const ATTEMPT_COUNT_KEY = 'fluxhost_login_attempts';
 const LOCKOUT_TIME_KEY = 'fluxhost_lockout_until';
 const MAX_ATTEMPTS = 5;
@@ -376,27 +427,32 @@ document.addEventListener('DOMContentLoaded', function() {
   checkAuthentication();
 });
 
-function checkAuthentication() {
-  const authToken = localStorage.getItem(AUTH_TOKEN_KEY);
+async function checkAuthentication() {
   const lockoutUntil = localStorage.getItem(LOCKOUT_TIME_KEY);
-  
+
   if (lockoutUntil && new Date().getTime() < parseInt(lockoutUntil)) {
     showLoginForm();
     showLockoutMessage(parseInt(lockoutUntil));
     return;
   }
-  
+
   if (lockoutUntil) {
     localStorage.removeItem(LOCKOUT_TIME_KEY);
     localStorage.removeItem(ATTEMPT_COUNT_KEY);
   }
-  
-  if (!authToken) {
-    showLoginForm();
-  } else {
-    hideLoginForm();
-    initializeTerminal();
+
+  // Ask the backend if our session cookie (if any) is still valid.
+  try {
+    const res = await fetch('/session-info', { credentials: 'include' });
+    if (res.ok) {
+      hideLoginForm();
+      initializeTerminal();
+      return;
+    }
+  } catch (error) {
+    console.error('Session check failed:', error);
   }
+  showLoginForm();
 }
 
 function showLoginForm() {
@@ -429,8 +485,8 @@ document.getElementById('login-form').addEventListener('submit', async function(
     const isValid = await validatePassword(passwordInput.value);
     
     if (isValid) {
-      const token = generateToken();
-      localStorage.setItem(AUTH_TOKEN_KEY, token);
+      // No local token to store -- the server already set the HttpOnly
+      // session cookie on this response (credentials: 'include' below).
       localStorage.removeItem(ATTEMPT_COUNT_KEY);
       localStorage.removeItem(LOCKOUT_TIME_KEY);
       
@@ -501,23 +557,31 @@ function updateLockoutCountdown(lockoutUntil) {
   setTimeout(() => updateLockoutCountdown(lockoutUntil), 1000);
 }
 
-function generateToken() {
-  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-}
-
 async function validatePassword(inputPassword) {
   try {
     const res = await fetch('/check-password', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password: inputPassword })
     });
-    const data = await res.json();
     return res.ok;
   } catch (error) {
     console.error('Network error:', error);
     return false;
   }
+}
+
+async function logout() {
+  try {
+    await fetch('/logout', { method: 'POST', credentials: 'include' });
+  } catch (error) {
+    console.error('Logout request failed:', error);
+  }
+  if (socket) socket.disconnect();
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('terminal-output').innerHTML = '';
+  showLoginForm();
 }
 
 /* ============================================================ TERMINAL ============================================================ */
@@ -540,6 +604,8 @@ function initializeTerminal() {
 </div>`;
   
   loadCommandHistory();
+  loadSavedCommands();
+  loadProxyRules();
   setInterval(fetchStats, 5000);
   fetchStats();
   connectWS();
@@ -550,8 +616,8 @@ function initializeTerminal() {
 }
 
 function connectWS() {
-  socket = io({ transports: ['websocket', 'polling'] });
-  
+  socket = io({ transports: ['websocket', 'polling'], withCredentials: true });
+
   socket.on('connect', () => {
     setConn('connected');
   });
@@ -560,7 +626,15 @@ function connectWS() {
     setConn('disconnected');
   });
   
-  socket.on('connect_error', () => {
+  socket.on('connect_error', (err) => {
+    // The backend's `connect` handler refuses the handshake (returns false)
+    // when the session cookie is missing/expired -- treat that as a logout
+    // rather than an endless "reconnecting" state.
+    if (err && err.message === 'unauthorized') {
+      showToast('Session expired -- please log in again');
+      logout();
+      return;
+    }
     setConn('reconnecting');
   });
   
@@ -574,7 +648,6 @@ function connectWS() {
       outputDiv.innerHTML += `<div class="output-line ${lineClass}">${escapeHtml(line)}</div>`;
     });
     outputDiv.scrollTop = outputDiv.scrollHeight;
-    saveCommandHistory(data.response);
     
     if (data.response.trim().endsWith(':') || 
         data.response.toLowerCase().includes('password') || 
@@ -656,12 +729,22 @@ function stopCommand() {
 
 function clearTerminal() {
   document.getElementById('terminal-output').innerHTML = '';
-  localStorage.removeItem('commandHistory');
   showToast('Terminal cleared');
 }
 
+async function clearServerHistory() {
+  try {
+    await fetch('/command-history', { method: 'DELETE', credentials: 'include' });
+    clearTerminal();
+    showToast('Command history cleared');
+  } catch (error) {
+    console.error('Failed to clear history:', error);
+    showToast('Failed to clear history');
+  }
+}
+
 function fetchStats() {
-  fetch('/stats')
+  fetch('/stats', { credentials: 'include' })
     .then(response => response.json())
     .then(data => {
       document.getElementById('cpu-usage').textContent = data.cpu;
@@ -672,20 +755,166 @@ function fetchStats() {
     .catch(error => console.error('Error fetching stats:', error));
 }
 
-function saveCommandHistory(entry) {
-  let history = JSON.parse(localStorage.getItem('commandHistory')) || [];
-  history.push(entry);
-  if (history.length > 100) history = history.slice(-100);
-  localStorage.setItem('commandHistory', JSON.stringify(history));
+// The server already persists every command in COMMAND_HISTORY_FILE (see
+// add_history_entry / update_history_entry in server_3.py) as soon as it's
+// run over the socket, so the client doesn't need to save anything itself --
+// it just needs to fetch it back on load.
+async function loadCommandHistory() {
+  const outputDiv = document.getElementById('terminal-output');
+  try {
+    const res = await fetch('/command-history?limit=100', { credentials: 'include' });
+    if (!res.ok) return;
+    const data = await res.json();
+    const entries = (data.history || []).slice().reverse(); // oldest first
+    entries.forEach(entry => {
+      outputDiv.innerHTML += `<div class="command-line">${escapeHtml(entry.command)}</div>`;
+      if (entry.status && entry.status !== 'running') {
+        const codeNote = entry.exit_code !== null && entry.exit_code !== undefined
+          ? ` (exit ${entry.exit_code})` : '';
+        outputDiv.innerHTML += `<div class="output-line" style="opacity:0.6;">-- ${entry.status}${codeNote} --</div>`;
+      }
+    });
+    outputDiv.scrollTop = outputDiv.scrollHeight;
+  } catch (error) {
+    console.error('Failed to load command history:', error);
+  }
 }
 
-function loadCommandHistory() {
-  const outputDiv = document.getElementById('terminal-output');
-  let history = JSON.parse(localStorage.getItem('commandHistory')) || [];
-  history.forEach(entry => {
-    outputDiv.innerHTML += `<div class="output-line">${escapeHtml(entry)}</div>`;
-  });
-  outputDiv.scrollTop = outputDiv.scrollHeight;
+/* ============================================================ SAVED COMMANDS ============================================================ */
+async function loadSavedCommands() {
+  const list = document.getElementById('saved-commands-list');
+  if (!list) return;
+  try {
+    const res = await fetch('/saved-commands', { credentials: 'include' });
+    if (!res.ok) return;
+    const data = await res.json();
+    const commands = data.commands || [];
+    list.innerHTML = commands.length ? '' : '<div class="saved-empty">No saved commands yet</div>';
+    commands.forEach(c => {
+      const row = document.createElement('div');
+      row.className = 'saved-cmd-row';
+      row.innerHTML = `
+        <span class="saved-cmd-label" title="${escapeHtml(c.command)}">${escapeHtml(c.label)}</span>
+        <button class="saved-cmd-run" title="Run">▶</button>
+        <button class="saved-cmd-del" title="Delete">✕</button>
+      `;
+      row.querySelector('.saved-cmd-run').onclick = () => {
+        document.getElementById('terminal-input').value = c.command;
+        sendCommand();
+      };
+      row.querySelector('.saved-cmd-del').onclick = () => deleteSavedCommand(c.id);
+      list.appendChild(row);
+    });
+  } catch (error) {
+    console.error('Failed to load saved commands:', error);
+  }
+}
+
+async function saveCurrentCommand() {
+  const inputField = document.getElementById('terminal-input');
+  const command = inputField.value.trim();
+  if (!command) {
+    showToast('Type a command first');
+    return;
+  }
+  const label = window.prompt('Label for this saved command:', command) || command;
+  try {
+    const res = await fetch('/saved-commands', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ command, label })
+    });
+    if (!res.ok) throw new Error('Save failed');
+    showToast('Command saved');
+    loadSavedCommands();
+  } catch (error) {
+    console.error('Failed to save command:', error);
+    showToast('Failed to save command');
+  }
+}
+
+async function deleteSavedCommand(id) {
+  try {
+    const res = await fetch(`/saved-commands/${id}`, { method: 'DELETE', credentials: 'include' });
+    if (!res.ok) throw new Error('Delete failed');
+    loadSavedCommands();
+  } catch (error) {
+    console.error('Failed to delete saved command:', error);
+    showToast('Failed to delete command');
+  }
+}
+
+/* ============================================================ PROXY RULES ============================================================ */
+// Any terminal command whose text mentions a host below gets routed through
+// that host's proxy (server sets HTTP_PROXY/HTTPS_PROXY on that one
+// subprocess -- see _resolve_proxy_for_command in server_3.py).
+async function loadProxyRules() {
+  const list = document.getElementById('proxy-rules-list');
+  if (!list) return;
+  try {
+    const res = await fetch('/proxy-rules', { credentials: 'include' });
+    if (!res.ok) return;
+    const data = await res.json();
+    const rules = data.rules || [];
+    list.innerHTML = rules.length ? '' : '<div class="saved-empty">No proxy rules yet</div>';
+    rules.forEach(r => {
+      const row = document.createElement('div');
+      row.className = 'saved-cmd-row';
+      row.innerHTML = `
+        <span class="saved-cmd-label" title="${escapeHtml(r.host)} → ${escapeHtml(r.proxy)}">${escapeHtml(r.host)} → ${escapeHtml(r.proxy)}</span>
+        <button class="saved-cmd-del" title="Delete">✕</button>
+      `;
+      row.querySelector('.saved-cmd-del').onclick = () => deleteProxyRule(r.id);
+      list.appendChild(row);
+    });
+  } catch (error) {
+    console.error('Failed to load proxy rules:', error);
+  }
+}
+
+async function addProxyRule() {
+  const hostInput = document.getElementById('proxy-host-input');
+  const proxyInput = document.getElementById('proxy-url-input');
+  const host = hostInput.value.trim();
+  const proxy = proxyInput.value.trim();
+
+  if (!host || !proxy) {
+    showToast('Enter both a host and a proxy URL');
+    return;
+  }
+  if (!/^https?:\/\//.test(proxy)) {
+    showToast('Proxy must look like http://ip:port');
+    return;
+  }
+
+  try {
+    const res = await fetch('/proxy-rules', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ host, proxy })
+    });
+    if (!res.ok) throw new Error('Add failed');
+    hostInput.value = '';
+    proxyInput.value = '';
+    showToast('Proxy rule added');
+    loadProxyRules();
+  } catch (error) {
+    console.error('Failed to add proxy rule:', error);
+    showToast('Failed to add proxy rule');
+  }
+}
+
+async function deleteProxyRule(id) {
+  try {
+    const res = await fetch(`/proxy-rules/${id}`, { method: 'DELETE', credentials: 'include' });
+    if (!res.ok) throw new Error('Delete failed');
+    loadProxyRules();
+  } catch (error) {
+    console.error('Failed to delete proxy rule:', error);
+    showToast('Failed to delete rule');
+  }
 }
 
 function openFiles() {
