@@ -108,7 +108,9 @@ body.night-mode .glass{
 .file-item.selected{background:rgba(155,89,182,0.09);border-color:rgba(155,89,182,0.28);}
 .file-item.folder-item{border-left:3px solid var(--purple-accent);}
 .file-item.folder-item:hover{background:rgba(155,89,182,0.08);}
-.file-checkbox{width:16px;height:16px;flex-shrink:0;}
+.file-checkbox{width:16px;height:16px;flex-shrink:0;display:none;}
+.file-list.select-mode .file-checkbox{display:block;}
+.file-item.select-mode-active{cursor:pointer;}
 .file-icon{width:18px;height:18px;flex-shrink:0;color:var(--purple-accent);}
 .file-icon.file{color:var(--text-sec);width:16px;height:16px;}
 .file-name{flex:1;font-size:12px;color:var(--text-primary);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -176,6 +178,17 @@ body.night-mode .glass{
 .upload-drop:hover{border-color:rgba(155,89,182,0.4);color:var(--purple-accent);}
 .upload-drop.dragover{border-color:var(--purple-accent);background:rgba(155,89,182,0.08);}
 .upload-drop input{display:none;}
+
+.breadcrumb{display:flex;flex-wrap:wrap;align-items:center;gap:4px;}
+.breadcrumb-crumb{font-size:12px;color:var(--purple-accent);font-family:'Courier New',monospace;cursor:pointer;}
+.breadcrumb-crumb:hover{text-decoration:underline;}
+.breadcrumb-sep{font-size:11px;color:var(--text-dim);}
+
+.upload-progress-wrap{margin:0 15px 12px;display:none;align-items:center;gap:8px;}
+.upload-progress-wrap.show{display:flex;}
+.upload-progress-track{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,0.08);overflow:hidden;}
+.upload-progress-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--purple-accent),var(--amber));transition:width 0.15s;}
+.upload-progress-text{font-size:10.5px;color:var(--text-dim);min-width:32px;text-align:right;}
 
 /* Syntax highlighting */
 .keyword{color:#c678dd;}
@@ -249,7 +262,7 @@ body.night-mode .glass{
   <div class="glass">
     <div class="path-bar">
       <span class="path-text">Location:</span>
-      <span class="path-value" id="path-display">/</span>
+      <div class="breadcrumb" id="breadcrumb"></div>
     </div>
     
     <div class="action-grid">
@@ -269,6 +282,10 @@ body.night-mode .glass{
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
         Zip
       </button>
+      <button class="action-btn" id="select-mode-btn" onclick="toggleSelectionMode()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Select
+      </button>
       <button class="action-btn" onclick="window.location.href='/'">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
         Terminal
@@ -276,14 +293,22 @@ body.night-mode .glass{
     </div>
     
     <input type="file" id="upload-input" style="display:none" onchange="uploadFile()">
-    
+
+    <div class="upload-progress-wrap" id="upload-progress-wrap">
+      <div class="upload-progress-track"><div class="upload-progress-bar" id="upload-progress-bar"></div></div>
+      <div class="upload-progress-text" id="upload-progress-text">0%</div>
+    </div>
+
     <div class="bulk-bar" id="bulk-bar">
       <div class="bulk-count"><span id="selected-count">0</span> selected</div>
       <div class="bulk-actions">
+        <button class="bulk-btn" onclick="selectAllFiles(true)">Select All</button>
         <button class="bulk-btn" onclick="selectAllFiles(false)">Deselect</button>
         <button class="bulk-btn" onclick="moveSelected()">Move</button>
         <button class="bulk-btn danger" onclick="deleteSelected()">Delete</button>
-        <button class="bulk-btn" onclick="zipSelected()">Zip</button>
+        <button class="bulk-btn" onclick="zipSelected()">Zip Here</button>
+        <button class="bulk-btn" onclick="downloadZipSelected()">Download Zip</button>
+        <button class="bulk-btn" onclick="cancelSelectionMode()">Cancel</button>
       </div>
     </div>
     
@@ -318,47 +343,56 @@ body.night-mode .glass{
 (function(){
   const btn=document.getElementById('theme-btn');
   if(localStorage.getItem('fluxhost-theme')==='night') document.body.classList.add('night-mode');
-  btn.addEventListener('click',function(){ 
-    document.body.classList.toggle('night-mode'); 
-    localStorage.setItem('fluxhost-theme',document.body.classList.contains('night-mode')?'night':'default'); 
+  btn.addEventListener('click',function(){
+    document.body.classList.toggle('night-mode');
+    localStorage.setItem('fluxhost-theme',document.body.classList.contains('night-mode')?'night':'default');
   });
 })();
 
 /* ============================================================ AUTH ============================================================ */
-const AUTH_TOKEN_KEY = 'fluxhost_auth_token';
+// Auth now uses an HttpOnly session cookie set by the server on /check-password.
+// The cookie can't (and shouldn't) be read from JS, so we just make an
+// authenticated request and see whether the server accepts it.
 const serverUrl = window.location.origin;
 let currentPath = "";
 let selectedFiles = new Set();
+let selectionMode = false;
 let currentEditingFile = "";
+let currentItems = []; // last loaded directory listing (names + is_directory), used by Select All
 
-function checkAuthentication() {
-  const token = localStorage.getItem(AUTH_TOKEN_KEY);
-  if (!token) {
-    document.getElementById('login-modal').classList.add('show');
-    document.getElementById('app').style.display = 'none';
-    return false;
-  }
-  document.getElementById('app').style.display = 'flex';
-  loadFiles();
-  return true;
+function apiFetch(path, options = {}) {
+  return fetch(`${serverUrl}${path}`, { ...options, credentials: 'include' });
+}
+
+async function checkAuthentication() {
+  try {
+    const res = await apiFetch('/stats');
+    if (res.ok) {
+      document.getElementById('login-modal').classList.remove('show');
+      document.getElementById('app').style.display = 'flex';
+      loadFiles();
+      return true;
+    }
+  } catch (error) { /* fall through to login */ }
+
+  document.getElementById('login-modal').classList.add('show');
+  document.getElementById('app').style.display = 'none';
+  return false;
 }
 
 async function checkPassword(e) {
   e.preventDefault();
   const password = document.getElementById('password').value;
   const errorMsg = document.getElementById('error-message');
-  
+
   try {
-    const res = await fetch('/check-password', {
+    const res = await apiFetch('/check-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ password })
     });
-    
+
     if (res.ok) {
-      const token = Math.random().toString(36).substring(2);
-      localStorage.setItem(AUTH_TOKEN_KEY, token);
-      document.getElementById('login-modal').classList.remove('show');
       document.getElementById('password').value = '';
       errorMsg.style.display = 'none';
       checkAuthentication();
@@ -372,68 +406,143 @@ async function checkPassword(e) {
   }
 }
 
-function logout() {
-  localStorage.removeItem(AUTH_TOKEN_KEY);
+async function logout() {
+  try { await apiFetch('/logout', { method: 'POST' }); } catch (error) { /* ignore */ }
   location.reload();
+}
+
+/* ============================================================ SELECTION MODE ============================================================ */
+// Tapping a row normally opens the file/folder. That makes it easy to
+// mis-tap a checkbox and open something by accident. Instead: an explicit
+// "Select" button puts the list into selection mode, where tapping anywhere
+// on a row (a much bigger, easier target) toggles its checkbox instead of
+// opening it. "Cancel" (or selecting nothing and tapping Select again) exits.
+function toggleSelectionMode() {
+  selectionMode = !selectionMode;
+  const btn = document.getElementById('select-mode-btn');
+  const list = document.getElementById('file-list');
+
+  if (selectionMode) {
+    btn.classList.add('primary');
+    list.classList.add('select-mode');
+  } else {
+    btn.classList.remove('primary');
+    list.classList.remove('select-mode');
+    selectedFiles.clear();
+  }
+  updateBulkBar();
+}
+
+function cancelSelectionMode() {
+  selectionMode = false;
+  document.getElementById('select-mode-btn').classList.remove('primary');
+  document.getElementById('file-list').classList.remove('select-mode');
+  selectedFiles.clear();
+  updateBulkBar();
 }
 
 /* ============================================================ FILE OPERATIONS ============================================================ */
 async function loadFiles(path = "") {
   currentPath = path;
-  document.getElementById('path-display').textContent = path || '/';
   selectedFiles.clear();
   updateBulkBar();
-  
-  const apiUrl = path ? `${serverUrl}/dir/${encodeURIComponent(path)}` : `${serverUrl}/files`;
-  
+  renderBreadcrumb(path);
+
+  const apiUrl = path ? `/dir/${encodeURIComponent(path)}` : `/files`;
+
   try {
-    const res = await fetch(apiUrl);
+    const res = await apiFetch(apiUrl);
     const data = await res.json();
-    
+    currentItems = Array.isArray(data) ? data : [];
+
     const fileList = document.getElementById('file-list');
     fileList.innerHTML = '';
-    
+    if (selectionMode) fileList.classList.add('select-mode'); else fileList.classList.remove('select-mode');
+
     if (path) {
       fileList.innerHTML += `
-        <div class="file-item" onclick="navigateBack()">
+        <div class="file-item" data-back="1">
           <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
           <div class="file-name">.. Go Back</div>
         </div>`;
     }
-    
-    data.forEach(item => {
+
+    currentItems.forEach(item => {
       const isFolder = item.is_directory;
       const folderClass = isFolder ? ' folder-item' : '';
       const nameClass = isFolder ? ' folder-name' : '';
-      
-      const icon = isFolder ? 
+
+      const icon = isFolder ?
         '<svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>' :
         '<svg class="file-icon file" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
-      
+
       const size = isFolder ? '<span style="color:var(--purple-accent);font-size:10px;">Folder</span>' : formatSize(item.size);
-      
+
       fileList.innerHTML += `
-        <div class="file-item${folderClass}" onclick="handleFileClick('${escapeHtml(item.name)}', ${isFolder})">
-          <input type="checkbox" class="file-checkbox" onclick="event.stopPropagation();toggleSelect('${escapeHtml(item.name)}')">
+        <div class="file-item${folderClass}" data-name="${escapeHtml(item.name)}" data-isdir="${isFolder ? '1' : '0'}">
+          <input type="checkbox" class="file-checkbox" data-role="checkbox">
           ${icon}
           <div class="file-name${nameClass}">${escapeHtml(item.name)}</div>
           <div class="file-size">${size}</div>
           <div class="file-actions">
-            ${!isFolder ? `<div class="file-action-btn" onclick="event.stopPropagation();downloadFile('${escapeHtml(item.name)}');" title="Download">
+            ${!isFolder ? `<div class="file-action-btn" data-role="download" title="Download">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
             </div>` : ''}
-            <div class="file-action-btn" onclick="event.stopPropagation();renameFile('${escapeHtml(item.name)}');" title="Rename">
+            <div class="file-action-btn" data-role="rename" title="Rename">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </div>
-            <div class="file-action-btn" onclick="event.stopPropagation();deleteFile('${escapeHtml(item.name)}');" title="Delete">
+            <div class="file-action-btn" data-role="delete" title="Delete">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             </div>
           </div>
         </div>`;
     });
+
+    syncCheckboxes();
   } catch (error) {
     showToast('Error loading files');
   }
+}
+
+// Single delegated handler for the whole list: keeps "select" taps and
+// "open" taps clearly separate instead of relying on many small onclick
+// targets that are easy to mis-tap on mobile.
+document.getElementById('file-list').addEventListener('click', (e) => {
+  const row = e.target.closest('.file-item');
+  if (!row) return;
+
+  if (row.dataset.back) { navigateBack(); return; }
+
+  const role = e.target.closest('[data-role]')?.dataset.role;
+  const name = row.dataset.name;
+  const isDir = row.dataset.isdir === '1';
+
+  if (role === 'download') { downloadFile(name); return; }
+  if (role === 'rename') { renameFile(name); return; }
+  if (role === 'delete') { deleteFile(name); return; }
+  if (role === 'checkbox') { toggleSelect(name); return; }
+
+  // Plain tap on the row itself
+  if (selectionMode) {
+    toggleSelect(name);
+  } else {
+    handleFileClick(name, isDir);
+  }
+});
+
+function renderBreadcrumb(path) {
+  const container = document.getElementById('breadcrumb');
+  const parts = path ? path.split('/').filter(Boolean) : [];
+  let html = `<span class="breadcrumb-crumb" data-path="">home</span>`;
+  let accumulated = [];
+  parts.forEach(part => {
+    accumulated.push(part);
+    html += `<span class="breadcrumb-sep">/</span><span class="breadcrumb-crumb" data-path="${escapeHtml(accumulated.join('/'))}">${escapeHtml(part)}</span>`;
+  });
+  container.innerHTML = html;
+  container.querySelectorAll('.breadcrumb-crumb').forEach(el => {
+    el.addEventListener('click', () => loadFiles(el.dataset.path));
+  });
 }
 
 function handleFileClick(name, isDir) {
@@ -457,11 +566,11 @@ function navigateBack() {
 async function openFile(name) {
   const filePath = currentPath ? `${currentPath}/${name}` : name;
   currentEditingFile = filePath;
-  
+
   if (name.toLowerCase().endsWith('.zip')) {
     if (confirm('Extract this ZIP file?')) {
       try {
-        const res = await fetch(`${serverUrl}/unzip`, {
+        const res = await apiFetch('/unzip', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ filename: filePath, path: currentPath })
@@ -475,11 +584,25 @@ async function openFile(name) {
     }
     return;
   }
-  
+
   try {
-    const res = await fetch(`${serverUrl}/files/${encodeURIComponent(filePath)}`);
+    const res = await apiFetch(`/files/${encodeURIComponent(filePath)}`);
     const data = await res.json();
-    
+
+    if (!res.ok) {
+      showToast(data.error || 'Error opening file');
+      return;
+    }
+
+    if (data.is_binary) {
+      if ((data.mimetype || '').startsWith('image/')) {
+        showImagePreview(filePath, data.mimetype);
+      } else {
+        showToast(`Can't preview this file type (${data.mimetype}) — use Download instead`);
+      }
+      return;
+    }
+
     document.getElementById('editor-title').textContent = 'Editing: ' + filePath;
     document.getElementById('editor-textarea').value = data.content;
     document.getElementById('editor-container').classList.add('show');
@@ -489,58 +612,45 @@ async function openFile(name) {
   }
 }
 
-/* ============================================================ SYNTAX HIGHLIGHTING ============================================================ */
-function applySyntaxHighlighting() {
-  // Disabled - causes line alignment issues
-  return;
-}
-
-function handleSyntaxInput(e) {
-  // Disabled - causes line alignment issues  
-  return;
-}
-
-function highlightSyntax(textarea, language) {
-  // Don't use overlay highlighting - it causes too many issues
-  // Just let the user see their code normally
-  textarea.style.color = 'var(--text-primary)';
-  textarea.style.background = 'rgba(0,0,0,0.2)';
-  
-  // Remove any existing overlay
-  const overlay = document.getElementById('syntax-overlay');
-  if (overlay) overlay.remove();
-}
-
-function highlightPython(code) {
-  return code; // Disabled for now
-}
-
-function highlightJavaScript(code) {
-  return code; // Disabled for now
+function showImagePreview(filePath, mimetype) {
+  let overlay = document.getElementById('image-preview-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'image-preview-overlay';
+    overlay.className = 'modal-overlay';
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:90vw;">
+        <div class="modal-header">
+          <div class="modal-title">Preview</div>
+          <div class="editor-btn" style="padding:4px 8px;" onclick="document.getElementById('image-preview-overlay').classList.remove('show')">Close</div>
+        </div>
+        <div class="modal-body" style="text-align:center;">
+          <img id="image-preview-img" style="max-width:100%;max-height:70vh;border-radius:8px;">
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+  document.getElementById('image-preview-img').src = `${serverUrl}/raw/${encodeURIComponent(filePath)}`;
+  overlay.classList.add('show');
 }
 
 async function saveFile() {
   const content = document.getElementById('editor-textarea').value;
-  
+
   try {
-    const res = await fetch(`${serverUrl}/edit`, {
+    const res = await apiFetch('/edit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filename: currentEditingFile, content })
     });
     const data = await res.json();
-    showToast(data.message);
+    showToast(data.message || data.error);
   } catch (error) {
     showToast('Error saving file');
   }
 }
 
 function closeEditor() {
-  const overlay = document.getElementById('syntax-overlay');
-  if (overlay) overlay.remove();
-  const textarea = document.getElementById('editor-textarea');
-  textarea.style.color = 'var(--text-primary)';
-  textarea.style.background = 'rgba(0,0,0,0.2)';
   document.getElementById('editor-container').classList.remove('show');
   loadFiles(currentPath);
 }
@@ -548,17 +658,17 @@ function closeEditor() {
 async function createNewFile() {
   const name = prompt('File name:');
   if (!name) return;
-  
+
   const path = currentPath ? `${currentPath}/${name}` : name;
-  
+
   try {
-    const res = await fetch(`${serverUrl}/create`, {
+    const res = await apiFetch('/create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filename: path })
     });
     const data = await res.json();
-    showToast(data.message);
+    showToast(data.message || data.error);
     loadFiles(currentPath);
   } catch (error) {
     showToast('Error creating file');
@@ -568,17 +678,17 @@ async function createNewFile() {
 async function createNewFolder() {
   const name = prompt('Folder name:');
   if (!name) return;
-  
+
   const path = currentPath ? `${currentPath}/${name}` : name;
-  
+
   try {
-    const res = await fetch(`${serverUrl}/mkdir`, {
+    const res = await apiFetch('/mkdir', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ dirname: path })
     });
     const data = await res.json();
-    showToast(data.message);
+    showToast(data.message || data.error);
     loadFiles(currentPath);
   } catch (error) {
     showToast('Error creating folder');
@@ -588,18 +698,18 @@ async function createNewFolder() {
 async function renameFile(name) {
   const newName = prompt('Rename to:', name);
   if (!newName || newName === name) return;
-  
+
   const oldPath = currentPath ? `${currentPath}/${name}` : name;
   const newPath = currentPath ? `${currentPath}/${newName}` : newName;
-  
+
   try {
-    const res = await fetch(`${serverUrl}/rename`, {
+    const res = await apiFetch('/rename', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ old_name: oldPath, new_name: newPath })
     });
     const data = await res.json();
-    showToast(data.message);
+    showToast(data.message || data.error);
     loadFiles(currentPath);
   } catch (error) {
     showToast('Error renaming file');
@@ -608,92 +718,160 @@ async function renameFile(name) {
 
 async function deleteFile(name) {
   if (!confirm(`Delete "${name}"?`)) return;
-  
+
   const path = currentPath ? `${currentPath}/${name}` : name;
-  
+
   try {
-    const res = await fetch(`${serverUrl}/delete`, {
+    const res = await apiFetch('/delete', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ filename: path })
     });
     const data = await res.json();
-    showToast(data.message);
+    showToast(data.message || data.error);
     loadFiles(currentPath);
   } catch (error) {
     showToast('Error deleting file');
   }
 }
 
+function downloadFile(name) {
+  const path = currentPath ? `${currentPath}/${name}` : name;
+  // A plain anchor navigation sends the session cookie automatically and
+  // streams the raw file straight from the server -- works for any file
+  // type/size, not just text (unlike the old fetch-JSON-then-blob approach).
+  const link = document.createElement('a');
+  link.href = `${serverUrl}/download/${encodeURIComponent(path)}`;
+  link.download = name;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+/* ============================================================ UPLOAD (chunked, with progress) ============================================================ */
+const UPLOAD_CHUNK_SIZE = 5 * 1024 * 1024; // 5MB per chunk
+
+function xhrRequest(url, formData, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    xhr.withCredentials = true;
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) onProgress(e.loaded / e.total);
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try { resolve(JSON.parse(xhr.responseText)); } catch (e) { resolve({}); }
+      } else {
+        reject(new Error(xhr.responseText || `HTTP ${xhr.status}`));
+      }
+    };
+    xhr.onerror = () => reject(new Error('Network error'));
+    xhr.send(formData);
+  });
+}
+
+function jsonRequest(url, body) {
+  return apiFetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  }).then(res => res.json().then(data => ({ ok: res.ok, data })));
+}
+
+function setUploadProgress(fraction) {
+  const wrap = document.getElementById('upload-progress-wrap');
+  const bar = document.getElementById('upload-progress-bar');
+  const text = document.getElementById('upload-progress-text');
+  const pct = Math.round(fraction * 100);
+  wrap.classList.add('show');
+  bar.style.width = pct + '%';
+  text.textContent = pct + '%';
+}
+
+function hideUploadProgress() {
+  document.getElementById('upload-progress-wrap').classList.remove('show');
+}
+
 async function uploadFile() {
   const input = document.getElementById('upload-input');
   if (!input.files.length) return;
-  
-  const formData = new FormData();
-  formData.append('file', input.files[0]);
-  formData.append('path', currentPath);
-  
+  const file = input.files[0];
+
+  const totalChunks = Math.max(1, Math.ceil(file.size / UPLOAD_CHUNK_SIZE));
+  const uploadId = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`).replace(/[^a-zA-Z0-9_-]/g, '');
+
+  setUploadProgress(0);
+
   try {
-    const res = await fetch(`${serverUrl}/upload`, {
-      method: 'POST',
-      body: formData
+    for (let i = 0; i < totalChunks; i++) {
+      const start = i * UPLOAD_CHUNK_SIZE;
+      const chunk = file.slice(start, start + UPLOAD_CHUNK_SIZE);
+
+      const formData = new FormData();
+      formData.append('chunk', chunk, file.name);
+      formData.append('upload_id', uploadId);
+      formData.append('chunk_index', i);
+      formData.append('total_chunks', totalChunks);
+
+      await xhrRequest(`${serverUrl}/upload-chunk`, formData, (chunkFraction) => {
+        setUploadProgress((i + chunkFraction) / totalChunks);
+      });
+    }
+
+    const { ok, data } = await jsonRequest('/upload-complete', {
+      upload_id: uploadId,
+      filename: file.name,
+      path: currentPath,
+      total_chunks: totalChunks
     });
-    const data = await res.json();
-    showToast(data.message);
+
+    showToast(ok ? (data.message || 'Uploaded') : (data.error || 'Upload failed'));
+  } catch (error) {
+    showToast('Error uploading file: ' + error.message);
+  } finally {
+    hideUploadProgress();
     input.value = '';
     loadFiles(currentPath);
-  } catch (error) {
-    showToast('Error uploading file');
   }
 }
 
-function downloadFile(name) {
-  const path = currentPath ? `${currentPath}/${name}` : name;
-  const url = `${serverUrl}/files/${encodeURIComponent(path)}`;
-  
-  fetch(url)
-    .then(res => res.json())
-    .then(data => {
-      const blob = new Blob([data.content], { type: 'text/plain' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = name;
-      link.click();
-      showToast('Downloaded ' + name);
-    })
-    .catch(() => showToast('Error downloading file'));
-}
-
-/* ============================================================ SELECTION & BULK ============================================================ */
+/* ============================================================ SELECTION & BULK (batch APIs) ============================================================ */
 function toggleSelect(name) {
   if (selectedFiles.has(name)) {
     selectedFiles.delete(name);
   } else {
     selectedFiles.add(name);
   }
+  syncCheckboxes();
   updateBulkBar();
 }
 
-function selectAllFiles(select) {
-  const checkboxes = document.querySelectorAll('.file-checkbox');
-  selectedFiles.clear();
-  checkboxes.forEach((cb, i) => {
-    if (i > 0) {
-      cb.checked = select;
-      if (select) {
-        const name = cb.parentElement.querySelector('.file-name').textContent;
-        selectedFiles.add(name);
-      }
-    }
+function syncCheckboxes() {
+  document.querySelectorAll('#file-list .file-item[data-name]').forEach(row => {
+    const name = row.dataset.name;
+    const cb = row.querySelector('.file-checkbox');
+    const selected = selectedFiles.has(name);
+    if (cb) cb.checked = selected;
+    row.classList.toggle('selected', selected);
   });
+}
+
+function selectAllFiles(select) {
+  if (select) {
+    currentItems.forEach(item => selectedFiles.add(item.name));
+  } else {
+    selectedFiles.clear();
+  }
+  syncCheckboxes();
   updateBulkBar();
 }
 
 function updateBulkBar() {
   const bar = document.getElementById('bulk-bar');
   const count = document.getElementById('selected-count');
-  
-  if (selectedFiles.size > 0) {
+
+  if (selectionMode || selectedFiles.size > 0) {
     bar.classList.add('show');
     count.textContent = selectedFiles.size;
   } else {
@@ -702,18 +880,19 @@ function updateBulkBar() {
 }
 
 async function deleteSelected() {
-  if (!selectedFiles.size || !confirm(`Delete ${selectedFiles.size} files?`)) return;
-  
-  for (const name of selectedFiles) {
-    const path = currentPath ? `${currentPath}/${name}` : name;
-    await fetch(`${serverUrl}/delete`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ filename: path })
-    }).catch(() => {});
+  if (!selectedFiles.size || !confirm(`Delete ${selectedFiles.size} item(s)?`)) return;
+
+  const { ok, data } = await jsonRequest('/batch-delete', {
+    paths: Array.from(selectedFiles),
+    base_path: currentPath
+  });
+
+  if (ok) {
+    showToast(`Deleted ${data.deleted.length} item(s)${data.failed.length ? `, ${data.failed.length} failed` : ''}`);
+  } else {
+    showToast(data.error || 'Error deleting items');
   }
-  
-  showToast(`Deleted ${selectedFiles.size} files`);
+
   selectedFiles.clear();
   loadFiles(currentPath);
 }
@@ -723,30 +902,22 @@ async function moveSelected() {
     showToast('No files selected');
     return;
   }
-  
-  const targetPath = prompt('Move to path (e.g., subfolder or ../parent):', '');
-  if (targetPath === null) return;
-  
-  let successCount = 0;
-  
-  for (const name of selectedFiles) {
-    const oldPath = currentPath ? `${currentPath}/${name}` : name;
-    const newPath = targetPath ? `${targetPath}/${name}` : name;
-    
-    try {
-      const res = await fetch(`${serverUrl}/rename`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ old_name: oldPath, new_name: newPath })
-      });
-      
-      if (res.ok) successCount++;
-    } catch (error) {
-      console.error('Error moving file:', error);
-    }
+
+  const destination = prompt('Move to path (e.g., subfolder or leave blank for home):', '');
+  if (destination === null) return;
+
+  const { ok, data } = await jsonRequest('/batch-move', {
+    paths: Array.from(selectedFiles),
+    base_path: currentPath,
+    destination
+  });
+
+  if (ok) {
+    showToast(`Moved ${data.moved.length} item(s)${data.failed.length ? `, ${data.failed.length} failed` : ''}`);
+  } else {
+    showToast(data.error || 'Error moving items');
   }
-  
-  showToast(`Moved ${successCount} of ${selectedFiles.size} files`);
+
   selectedFiles.clear();
   loadFiles(currentPath);
 }
@@ -756,35 +927,59 @@ async function zipSelected() {
     showToast('No files selected');
     return;
   }
-  
-  const zipName = prompt('ZIP file name:', 'archive.zip');
+
+  const zipName = prompt('ZIP file name (created in this folder):', 'archive.zip');
   if (!zipName) return;
-  
-  // Ensure .zip extension
   const finalZipName = zipName.endsWith('.zip') ? zipName : zipName + '.zip';
-  
+
+  const { ok, data } = await jsonRequest('/create-zip', {
+    zip_name: finalZipName,
+    files: Array.from(selectedFiles),
+    path: currentPath
+  });
+
+  showToast(ok ? data.message : (data.error || 'Error creating ZIP'));
+  if (ok) { selectedFiles.clear(); loadFiles(currentPath); }
+}
+
+async function downloadZipSelected() {
+  if (!selectedFiles.size) {
+    showToast('No files selected');
+    return;
+  }
+
+  const zipName = prompt('Downloaded ZIP file name:', 'archive.zip');
+  if (!zipName) return;
+  const finalZipName = zipName.endsWith('.zip') ? zipName : zipName + '.zip';
+
   try {
-    const res = await fetch(`${serverUrl}/create-zip`, {
+    const res = await apiFetch('/download-zip', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        zip_name: finalZipName,
+        path: currentPath,
         files: Array.from(selectedFiles),
-        path: currentPath
+        zip_name: finalZipName.replace(/\.zip$/, '')
       })
     });
-    
-    const data = await res.json();
-    
-    if (res.ok) {
-      showToast(data.message);
-      selectedFiles.clear();
-      loadFiles(currentPath);
-    } else {
-      showToast(data.error || 'Error creating ZIP');
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      showToast(data.error || 'Error creating ZIP download');
+      return;
     }
+
+    const blob = await res.blob();
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = finalZipName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(link.href);
+    showToast(`Downloaded ${finalZipName}`);
   } catch (error) {
-    showToast('Error creating ZIP file');
+    showToast('Error downloading ZIP');
   }
 }
 
@@ -793,13 +988,13 @@ function updateLineNumbers() {
   const textarea = document.getElementById('editor-textarea');
   const lineNumbers = document.getElementById('line-numbers');
   const lines = textarea.value.split('\n').length;
-  
+
   let html = '';
   for (let i = 1; i <= lines; i++) {
     html += i + '<br>';
   }
   lineNumbers.innerHTML = html;
-  
+
   textarea.addEventListener('scroll', function() {
     lineNumbers.scrollTop = textarea.scrollTop;
   });
@@ -839,5 +1034,6 @@ function escapeHtml(text) {
 
 document.addEventListener('DOMContentLoaded', checkAuthentication);
 </script>
+
 </body>
 </html>
