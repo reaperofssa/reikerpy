@@ -39,6 +39,7 @@ DATA_DIR = os.path.join(os.getcwd(), "data")
 os.makedirs(DATA_DIR, exist_ok=True)
 COMMAND_HISTORY_FILE = os.path.join(DATA_DIR, "command_history.json")
 SAVED_COMMANDS_FILE = os.path.join(DATA_DIR, "saved_commands.json")
+PROXY_RULES_FILE = os.path.join(DATA_DIR, "proxy_rules.json")
 
 # --- Auth: simple HttpOnly cookie session tokens ---
 # token -> {"created": ts, "last_seen": ts}
@@ -273,6 +274,86 @@ def delete_saved_command(command_id):
         _save_json_list(SAVED_COMMANDS_FILE, remaining)
     return jsonify({"message": "Deleted"}), 200
 
+
+# --- Per-host proxy rules ---------------------------------------------------
+# A rule is {"id": ..., "host": "facebook.com", "proxy": "http://1.2.3.4:8080"}.
+# Before a terminal command runs, we scan its text for any configured host.
+# If one appears, we set HTTP_PROXY/HTTPS_PROXY to that rule's proxy just for
+# that subprocess -- so e.g. `curl facebook.com` gets routed through the
+# proxy while `curl example.com` (no matching rule) goes out directly.
+#
+# Caveats (worth knowing, not solvable with env vars alone):
+#   - This only affects tools that respect HTTP_PROXY/HTTPS_PROXY (curl, wget,
+#     pip, npm, git, most language HTTP libraries). A raw socket connection
+#     ignores it entirely.
+#   - Matching is a substring/domain check against the command text, not a
+#     real DNS/URL parse -- so it can be fooled by an IP literal, a redirect,
+#     or a URL shortener. For hard enforcement you'd want a network-level
+#     control (an intercepting/transparent proxy the container can't route
+#     around) rather than this.
+#   - If a single command references hosts with two *different* configured
+#     proxies, only the first match's proxy is used for the whole command --
+#     one shell invocation can't be split across multiple proxies via env
+#     vars. Give overlapping hosts the same proxy if you need this to matter.
+proxy_rules_lock = threading.Lock()
+
+
+@app.route('/proxy-rules', methods=['GET'])
+def get_proxy_rules():
+    with proxy_rules_lock:
+        return jsonify({"rules": _load_json_list(PROXY_RULES_FILE)})
+
+
+@app.route('/proxy-rules', methods=['POST'])
+def add_proxy_rule():
+    data = request.json or {}
+    host = (data.get("host") or "").strip().lower()
+    proxy = (data.get("proxy") or "").strip()
+
+    if not host:
+        return jsonify({"error": "Missing host"}), 400
+    if not proxy:
+        return jsonify({"error": "Missing proxy"}), 400
+    if not (proxy.startswith("http://") or proxy.startswith("https://")):
+        return jsonify({"error": "Proxy must look like http://<ip>:<port>"}), 400
+
+    entry = {
+        "id": uuid.uuid4().hex,
+        "host": host,
+        "proxy": proxy,
+        "created": time.time(),
+    }
+    with proxy_rules_lock:
+        rules = _load_json_list(PROXY_RULES_FILE)
+        rules.append(entry)
+        _save_json_list(PROXY_RULES_FILE, rules)
+
+    return jsonify(entry), 201
+
+
+@app.route('/proxy-rules/<rule_id>', methods=['DELETE'])
+def delete_proxy_rule(rule_id):
+    with proxy_rules_lock:
+        rules = _load_json_list(PROXY_RULES_FILE)
+        remaining = [r for r in rules if r.get("id") != rule_id]
+        if len(remaining) == len(rules):
+            return jsonify({"error": "Proxy rule not found"}), 404
+        _save_json_list(PROXY_RULES_FILE, remaining)
+    return jsonify({"message": "Deleted"}), 200
+
+
+def _resolve_proxy_for_command(command_text):
+    """Return a proxy URL if command_text mentions a host with a configured
+    rule, else None. First matching rule wins (see caveats above)."""
+    with proxy_rules_lock:
+        rules = _load_json_list(PROXY_RULES_FILE)
+    lowered = command_text.lower()
+    for rule in rules:
+        host = rule.get("host", "")
+        if host and host in lowered:
+            return rule.get("proxy")
+    return None
+
 # Add these routes to your Flask app (app.py)
 
 @app.route('/create-zip', methods=['POST'])
@@ -458,6 +539,15 @@ def handle_command(data):
 
     def run_command(sid, command_id, full_command):
         try:
+            proxy_url = _resolve_proxy_for_command(full_command)
+            cmd_env = {**os.environ, "PYTHONUNBUFFERED": "1"}
+            if proxy_url:
+                cmd_env["HTTP_PROXY"] = proxy_url
+                cmd_env["HTTPS_PROXY"] = proxy_url
+                cmd_env["http_proxy"] = proxy_url
+                cmd_env["https_proxy"] = proxy_url
+                log_message(f"Routing command {command_id} through proxy {proxy_url}")
+
             process = subprocess.Popen(
                 full_command,
                 shell=True,
@@ -467,7 +557,7 @@ def handle_command(data):
                 stdin=subprocess.PIPE,
                 universal_newlines=True,
                 bufsize=1,
-                env={**os.environ, "PYTHONUNBUFFERED": "1"},
+                env=cmd_env,
                 start_new_session=True
             )
 
