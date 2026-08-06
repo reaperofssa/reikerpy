@@ -29,7 +29,7 @@ app = Flask(__name__, static_folder="static", static_url_path="/")
 # credentials and must NOT use "*" for origins (browsers reject that combo).
 # Set FRONTEND_ORIGIN in your .env to your frontend's origin, e.g.
 # FRONTEND_ORIGIN=https://myapp.example.com  (comma-separate multiple origins)
-FRONTEND_ORIGINS = [o.strip() for o in os.getenv("FRONTEND_ORIGIN", "http://localhost:3000").split(",") if o.strip()]
+FRONTEND_ORIGINS = [o.strip() for o in os.getenv("FRONTEND_ORIGIN", "https://pycra-pay.hf.space").split(",") if o.strip()]
 CORS(app, supports_credentials=True, origins=FRONTEND_ORIGINS)
 
 START_TIME = time.time()
