@@ -55,7 +55,7 @@ COOKIE_SAMESITE = os.getenv("COOKIE_SAMESITE", "None")
 
 # Routes that don't require a valid session token
 PUBLIC_ROUTES = {"/", "/check-password"}
-PUBLIC_PREFIXES = ("/static/",)
+PUBLIC_PREFIXES = ("/static/", "/socket.io/")
 
 
 def _is_public_route(path):
