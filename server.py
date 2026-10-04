@@ -1,10 +1,13 @@
 import os
+from dotenv import load_dotenv
+load_dotenv()  # must run BEFORE any os.getenv(...)
+
 import select
 import subprocess
 import threading
 import psutil
 from flask import Flask, send_from_directory, jsonify, request, send_file
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO, emit, ConnectionRefusedError
 from flask_cors import CORS
 from datetime import datetime
 import time
@@ -19,8 +22,6 @@ import secrets
 import json
 from functools import wraps
 from werkzeug.utils import secure_filename
-from dotenv import load_dotenv
-import os
 
 # Flask app initialization
 app = Flask(__name__, static_folder="static", static_url_path="/")
@@ -29,7 +30,7 @@ app = Flask(__name__, static_folder="static", static_url_path="/")
 # credentials and must NOT use "*" for origins (browsers reject that combo).
 # Set FRONTEND_ORIGIN in your .env to your frontend's origin, e.g.
 # FRONTEND_ORIGIN=https://myapp.example.com  (comma-separate multiple origins)
-FRONTEND_ORIGINS = [o.strip() for o in os.getenv("FRONTEND_ORIGIN", "https://pycra-pay.hf.space").split(",") if o.strip()]
+FRONTEND_ORIGINS = [o.strip() for o in os.getenv("FRONTEND_ORIGIN", "https://reikerxx-root.hf.space").split(",") if o.strip()]
 CORS(app, supports_credentials=True, origins=FRONTEND_ORIGINS)
 
 START_TIME = time.time()
@@ -101,8 +102,6 @@ UPLOAD_TMP_DIR = os.path.join(tempfile.gettempdir(), "chunked_uploads")
 os.makedirs(UPLOAD_TMP_DIR, exist_ok=True)
 CHUNK_SIZE_READ = 1024 * 1024  # stream to disk 1MB at a time
 
-load_dotenv()
-
 # Set working directory to /home
 HOME_DIR = os.path.join(os.getcwd(), 'home')
 
@@ -121,8 +120,8 @@ def handle_connect():
     """Reject the socket handshake unless a valid session cookie is present."""
     token = request.cookies.get(TOKEN_COOKIE_NAME)
     if not _token_is_valid(token):
-        log_message(f"Rejected unauthenticated socket connection from {request.sid}")
-        return False  # refuses the connection
+        log_message("Rejected unauthenticated socket connection")
+        raise ConnectionRefusedError("unauthorized")  # client sees err.message == 'unauthorized'
     return True
 
 # Hardcoded server stats (Modify based on actual system stats)
